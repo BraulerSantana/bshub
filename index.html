@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>BSHub</title>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1176,39 +1178,6 @@ body.light .mes-label{background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit
   box-shadow:0 8px 24px rgba(0,0,0,.4);
 }
 
-/* ===== MARCAÇÃO EM LOTE ===== */
-.toolbar-lote{
-  display:none;
-  align-items:center;
-  gap:8px;
-  padding:7px 20px;
-  background:rgba(37,99,235,.08);
-  border-bottom:1px solid rgba(37,99,235,.2);
-  flex-wrap:wrap;
-}
-.toolbar-lote.ativo{display:flex;}
-.lote-info{font-size:11px;font-weight:700;color:#60a5fa;flex-shrink:0;}
-.lote-btn{padding:5px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;transition:all .18s;border:1px solid;letter-spacing:.02em;}
-.lote-btn.primary{background:rgba(37,99,235,.2);border-color:rgba(37,99,235,.5);color:#93b4fc;}
-.lote-btn.primary:hover{background:rgba(37,99,235,.3);color:#fff;}
-.lote-btn.danger{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.4);color:#fca5a5;}
-.lote-btn.cancel{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);color:var(--text3);}
-.lote-btn.cancel:hover{color:var(--text2);}
-.lote-rotina-sel{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:11px;outline:none;cursor:pointer;}
-.ccard-sel-wrap{position:absolute;top:10px;right:10px;z-index:5;}
-.ccard-checkbox{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);cursor:pointer;appearance:none;transition:all .18s;display:none;}
-.modo-selecao .ccard-checkbox{display:block;}
-.ccard-checkbox:checked{background:#2563eb;border-color:#2563eb;}
-.ccard-checkbox:checked::after{content:'✓';display:flex;align-items:center;justify-content:center;width:100%;height:100%;font-size:10px;color:#fff;}
-.modo-selecao .ccard{cursor:pointer;}
-.ccard.selecionado{border-color:rgba(37,99,235,.5);box-shadow:0 0 0 2px rgba(37,99,235,.2);}
-.btn-lote-toggle{padding:5px 12px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--text3);letter-spacing:.03em;transition:all .18s;}
-.btn-lote-toggle:hover{border-color:rgba(37,99,235,.4);color:#60a5fa;background:rgba(37,99,235,.08);}
-.btn-lote-toggle.ativo{border-color:rgba(37,99,235,.5);color:#60a5fa;background:rgba(37,99,235,.1);}
-body.light .ccard-checkbox{border-color:#d1d5db;background:#fff;}
-body.light .ccard.selecionado{border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.1);}
-body.light .toolbar-lote{background:rgba(37,99,235,.05);border-bottom-color:rgba(37,99,235,.15);}
-
 /* ===== DUPLICAR EMPRESA ===== */
 /* usa iBtn já existente */
 
@@ -1227,11 +1196,414 @@ body.light .toolbar-lote{background:rgba(37,99,235,.05);border-bottom-color:rgba
 /* ===== RELATÓRIO MENSAL ===== */
 /* estilos no HTML do PDF */
 
+/* ===== TELA DE LOGIN ===== */
+#telaLogin{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#080b12 0%,#0d1525 50%,#080b12 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Inter',sans-serif;
+}
+#telaLogin::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 20% 20%,rgba(37,99,235,.12) 0%,transparent 60%),
+             radial-gradient(ellipse at 80% 80%,rgba(124,58,237,.08) 0%,transparent 60%);
+}
+.login-box{
+  position:relative;z-index:1;
+  width:100%;max-width:420px;
+  background:rgba(24,29,39,.95);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;
+  padding:40px;
+  box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04);
+  backdrop-filter:blur(20px);
+  margin:20px;
+}
+.login-logo{
+  text-align:center;margin-bottom:32px;
+}
+.login-logo-text{
+  font-size:36px;font-weight:900;color:#fff;letter-spacing:-.02em;
+}
+.login-logo-text span{color:#2563eb;}
+.login-logo-sub{
+  font-size:13px;color:rgba(255,255,255,.4);margin-top:4px;font-weight:400;
+}
+.login-tabs{
+  display:flex;gap:2px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);border-radius:10px;
+  padding:3px;margin-bottom:28px;
+}
+.login-tab{
+  flex:1;padding:8px;border-radius:7px;border:none;
+  background:transparent;color:rgba(255,255,255,.4);
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;
+  font-family:'Inter',sans-serif;
+}
+.login-tab.active{
+  background:#2563eb;color:#fff;
+  box-shadow:0 2px 12px rgba(37,99,235,.4);
+}
+.login-field{margin-bottom:16px;}
+.login-field label{
+  display:block;font-size:11px;font-weight:700;
+  color:rgba(255,255,255,.4);letter-spacing:.07em;
+  text-transform:uppercase;margin-bottom:6px;
+}
+.login-field input{
+  width:100%;padding:12px 14px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:9px;color:#fff;
+  font-size:14px;font-family:'Inter',sans-serif;
+  outline:none;transition:all .18s;
+}
+.login-field input:focus{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(37,99,235,.6);
+  box-shadow:0 0 0 3px rgba(37,99,235,.15);
+}
+.login-field input::placeholder{color:rgba(255,255,255,.2);}
+.login-btn{
+  width:100%;padding:13px;margin-top:8px;
+  background:linear-gradient(135deg,#2563eb,#4f46e5);
+  border:none;border-radius:9px;color:#fff;
+  font-size:14px;font-weight:700;cursor:pointer;
+  font-family:'Inter',sans-serif;
+  transition:all .2s;letter-spacing:.01em;
+  box-shadow:0 4px 16px rgba(37,99,235,.35);
+}
+.login-btn:hover{
+  box-shadow:0 6px 24px rgba(37,99,235,.5);
+  transform:translateY(-1px);
+}
+.login-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.login-erro{
+  margin-top:12px;padding:10px 14px;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);
+  border-radius:8px;color:#fca5a5;font-size:12px;font-weight:600;
+  display:none;
+}
+.login-sep{
+  text-align:center;margin:20px 0 8px;
+  font-size:11px;color:rgba(255,255,255,.2);
+}
+
+/* ===== ABA MANUAL ===== */
+#tabManual{display:none;}
+.manual-wrap{
+  max-width:780px;margin:0 auto;
+  padding:32px 20px 60px;
+}
+.manual-hero{
+  background:linear-gradient(135deg,#1e3a8a,#1d4ed8);
+  border-radius:var(--radius);padding:32px;margin-bottom:28px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+}
+.manual-hero-titulo{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.01em;}
+.manual-hero-sub{font-size:13px;color:rgba(255,255,255,.7);margin-top:4px;}
+.manual-hero-versao{font-size:11px;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;color:#fff;font-weight:700;flex-shrink:0;}
+.manual-secao{margin-bottom:28px;}
+.manual-secao-titulo{
+  font-size:13px;font-weight:800;color:var(--text);
+  letter-spacing:.04em;text-transform:uppercase;
+  margin-bottom:14px;padding-bottom:10px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.manual-secao-titulo::before{
+  content:'';width:3px;height:16px;
+  background:var(--accent);border-radius:2px;flex-shrink:0;
+}
+.manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+.manual-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px 16px;
+  transition:border-color .18s;
+}
+.manual-card:hover{border-color:var(--border2);}
+.manual-card-icon{font-size:20px;margin-bottom:8px;}
+.manual-card-titulo{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.manual-card-desc{font-size:12px;color:var(--text2);line-height:1.5;}
+.manual-passo{
+  display:flex;gap:14px;align-items:flex-start;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:8px;
+}
+.manual-passo-num{
+  width:28px;height:28px;border-radius:50%;background:var(--accent);
+  color:#fff;font-size:12px;font-weight:800;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0;
+}
+.manual-passo-titulo{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.manual-passo-desc{font-size:12px;color:var(--text2);line-height:1.5;}
+.manual-callout{
+  border-radius:var(--radius-sm);padding:14px 16px;
+  margin:14px 0;display:flex;gap:10px;align-items:flex-start;
+}
+.manual-callout.info{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);}
+.manual-callout.dica{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);}
+.manual-callout.aviso{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);}
+.manual-callout-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+.manual-callout-titulo{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.manual-callout-desc{font-size:12px;color:var(--text2);line-height:1.5;}
+.manual-tabela{width:100%;border-collapse:collapse;margin:12px 0;font-size:12px;}
+.manual-tabela th{
+  background:var(--bg3);padding:8px 12px;text-align:left;
+  font-size:10px;font-weight:800;color:var(--text2);
+  letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);
+}
+.manual-tabela td{
+  padding:9px 12px;border-bottom:1px solid var(--border);
+  color:var(--text2);vertical-align:top;
+}
+.manual-tabela tr:last-child td{border-bottom:none;}
+.manual-tabela tr:hover td{background:var(--bg3);}
+body.light .manual-tabela th{background:#f3f5fb;}
+body.light .manual-tabela tr:hover td{background:#f8fafc;}
+
+/* Tab Manual no header */
+.tab-manual-btn{
+  padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;
+  border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);
+  color:var(--text3);cursor:pointer;transition:all .18s;letter-spacing:.02em;
+}
+.tab-manual-btn:hover{background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.3);color:#60a5fa;}
+.tab-manual-btn.ativo{background:rgba(37,99,235,.15);border-color:rgba(37,99,235,.4);color:#60a5fa;}
+
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
+<!-- ===== TELA DE LOGIN ===== -->
+<script>
+// ===== LOGIN AUTÔNOMO — roda antes do sistema =====
+const _SB_URL = 'https://wkmzwxulthnbezctqhxv.supabase.co';
+const _SB_KEY = 'sb_publishable_OZaW-lKMLOvGNauYJaaJeQ_NX3AFEUh';
+let _sb = null, _user = null;
+
+function _initSB(){
+  try{
+    if(window.supabase){
+      _sb = window.supabase.createClient(_SB_URL, _SB_KEY);
+      _sb.auth.getSession().then(function(r){
+        if(r.data && r.data.session){ _user = r.data.session.user; _entrar(); }
+      }).catch(function(){});
+    }
+  }catch(e){}
+}
+function _initDOM(){
+  // Inicializar label do mês
+  try{
+    var ml = document.getElementById('mesLabel');
+    if(ml && typeof MESES !== 'undefined' && typeof currentMes !== 'undefined'){
+      ml.textContent = MESES[currentMes].slice(0,3)+' '+currentAno;
+    }
+  }catch(e){}
+  // Inicializar Supabase
+  _initSB();
+}
+
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded', _initDOM);
+}else{ _initDOM(); }
+
+function _entrar(){
+  // Sistema já está rodando — só esconde a tela de login
+  var tl=document.getElementById('telaLogin');
+  if(tl) tl.style.display='none';
+}
+
+function loginSetTab(tab){
+  var pe=document.getElementById('loginPanelEntrar');
+  var pc=document.getElementById('loginPanelCadastro');
+  var te=document.getElementById('loginTabEntrar');
+  var tc=document.getElementById('loginTabCadastro');
+  if(pe) pe.style.display=tab==='entrar'?'block':'none';
+  if(pc) pc.style.display=tab==='cadastro'?'block':'none';
+  if(te) te.classList.toggle('active',tab==='entrar');
+  if(tc) tc.classList.toggle('active',tab==='cadastro');
+  ['loginErro','cadErro'].forEach(function(id){ var el=document.getElementById(id); if(el) el.style.display='none'; });
+}
+
+function _erro(id,msg){ var el=document.getElementById(id); if(el){el.textContent=msg;el.style.display='block';} }
+function _trad(msg){
+  if(!msg) return 'Erro.';
+  if(msg.includes('Invalid login')) return 'E-mail ou senha incorretos.';
+  if(msg.includes('User already registered')) return 'E-mail já cadastrado.';
+  if(msg.includes('Password should be')) return 'Senha mínimo 6 caracteres.';
+  if(msg.includes('Email not confirmed')) return 'Confirme seu e-mail.';
+  return msg;
+}
+
+async function fazerLogin(){
+  var email=((document.getElementById('loginEmail')||{}).value||'').trim();
+  var senha=(document.getElementById('loginSenha')||{}).value||'';
+  var btn=document.getElementById('loginBtn');
+  if(!email||!senha){ _erro('loginErro','Preencha e-mail e senha.'); return; }
+  if(btn){btn.disabled=true;btn.textContent='Entrando...';}
+  try{
+    if(_sb){var r=await _sb.auth.signInWithPassword({email:email,password:senha});if(r.error)throw r.error;_user=r.data.user;}
+    else{_user={id:'local',email:email};}
+    _entrar();
+  }catch(e){
+    _erro('loginErro',_trad(e.message));
+    if(btn){btn.disabled=false;btn.textContent='Entrar no BSHub';}
+  }
+}
+
+async function fazerCadastro(){
+  var email=((document.getElementById('cadEmail')||{}).value||'').trim();
+  var senha=(document.getElementById('cadSenha')||{}).value||'';
+  var senha2=(document.getElementById('cadSenha2')||{}).value||'';
+  var btn=document.getElementById('cadBtn');
+  if(!email||!senha){_erro('cadErro','Preencha todos os campos.');return;}
+  if(senha.length<6){_erro('cadErro','Senha mínimo 6 caracteres.');return;}
+  if(senha!==senha2){_erro('cadErro','As senhas não conferem.');return;}
+  if(btn){btn.disabled=true;btn.textContent='Criando conta...';}
+  try{
+    if(_sb){var r=await _sb.auth.signUp({email:email,password:senha});if(r.error)throw r.error;_user=r.data.user;}
+    else{_user={id:'local',email:email};}
+    _entrar();
+  }catch(e){
+    _erro('cadErro',_trad(e.message));
+    if(btn){btn.disabled=false;btn.textContent='Criar conta gratuita';}
+  }
+}
+
+async function fazerLogout(){
+  if(typeof confirm2==='function'){
+    confirm2('Sair do BSHub?','Você será redirecionado para a tela de login.',async function(){
+      if(_sb) await _sb.auth.signOut().catch(function(){});
+      _user=null;
+      // Recarregar página para limpar estado
+      window.location.reload();
+    });
+  }
+}
+
+function abrirReset(){
+  var tr=document.getElementById('telaReset');
+  var re=document.getElementById('resetEmail');
+  var em=document.getElementById('loginEmail');
+  var rm=document.getElementById('resetMsg');
+  if(re&&em) re.value=em.value||'';
+  if(rm) rm.style.display='none';
+  if(tr) tr.style.display='flex';
+  setTimeout(function(){if(re)re.focus();},100);
+}
+function fecharReset(){var tr=document.getElementById('telaReset');if(tr)tr.style.display='none';}
+
+async function enviarReset(){
+  var email=((document.getElementById('resetEmail')||{}).value||'').trim();
+  var msg=document.getElementById('resetMsg');
+  var btn=document.getElementById('resetBtn');
+  if(!email){if(msg){msg.textContent='Digite seu e-mail.';msg.className='reset-msg erro';msg.style.display='block';}return;}
+  if(btn){btn.disabled=true;btn.textContent='Enviando...';}
+  try{
+    if(_sb){var r=await _sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});if(r.error)throw r.error;}
+    if(msg){msg.textContent='✓ Link enviado! Verifique seu e-mail.';msg.className='reset-msg ok';msg.style.display='block';}
+    if(btn)btn.textContent='Enviado!';
+    setTimeout(fecharReset,3000);
+  }catch(e){
+    if(msg){msg.textContent=_trad(e.message);msg.className='reset-msg erro';msg.style.display='block';}
+    if(btn){btn.disabled=false;btn.textContent='Tentar novamente';}
+  }
+}
+
+function abrirConta(){
+  var ce=document.getElementById('contaEmail');
+  if(ce)ce.textContent=(_user&&_user.email)||'';
+  ['contaNovaSenha','contaConfSenha'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var cm=document.getElementById('contaMsg');if(cm)cm.style.display='none';
+  var oc=document.getElementById('overlayConta');if(oc)oc.classList.add('open');
+}
+
+async function salvarConta(){
+  var nova=(document.getElementById('contaNovaSenha')||{}).value||'';
+  var conf=(document.getElementById('contaConfSenha')||{}).value||'';
+  var msg=document.getElementById('contaMsg');
+  if(!nova){if(msg){msg.textContent='Digite a nova senha.';msg.className='reset-msg erro';msg.style.display='block';}return;}
+  if(nova.length<6){if(msg){msg.textContent='Mínimo 6 caracteres.';msg.className='reset-msg erro';msg.style.display='block';}return;}
+  if(nova!==conf){if(msg){msg.textContent='As senhas não conferem.';msg.className='reset-msg erro';msg.style.display='block';}return;}
+  try{
+    if(_sb){var r=await _sb.auth.updateUser({password:nova});if(r.error)throw r.error;}
+    if(msg){msg.textContent='✓ Senha alterada!';msg.className='reset-msg ok';msg.style.display='block';}
+    setTimeout(function(){if(typeof closeOverlay==='function')closeOverlay('overlayConta');},2000);
+    if(typeof toast==='function')toast('Senha alterada!','success');
+  }catch(e){
+    if(msg){msg.textContent=_trad(e.message);msg.className='reset-msg erro';msg.style.display='block';}
+  }
+}
+
+function toggleManual(){
+  window._ma=!window._ma;
+  var main=document.querySelector('.content');
+  var empty=document.getElementById('emptyState');
+  var tabM=document.getElementById('tabManual');
+  var tabs=document.querySelector('.tabs-wrap');
+  var tb=document.querySelector('.toolbar');
+  var prog=document.querySelector('.progress-wrap');
+  var btn=document.getElementById('btnManual');
+  if(window._ma){
+    [main,tabs,tb,prog].forEach(function(el){if(el)el.style.display='none';});
+    if(empty)empty.style.display='none';
+    if(tabM)tabM.style.display='block';
+    if(btn){btn.classList.add('ativo');btn.textContent='✕ Fechar Manual';}
+  }else{
+    if(tabM)tabM.style.display='none';
+    [main,tabs,tb,prog].forEach(function(el){if(el)el.style.display='';});
+    if(btn){btn.classList.remove('ativo');btn.textContent='📖 Manual';}
+    if(typeof renderCards==='function')renderCards();
+  }
+}
+</script>
+
+<div id="telaLogin" style="display:flex!important;">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-text">BS<span>Hub</span></div>
+      <div class="login-logo-sub">Gestão de Obrigações Contábeis</div>
+    </div>
+    <div class="login-tabs">
+      <button class="login-tab active" id="loginTabEntrar" onclick="loginSetTab('entrar')">Entrar</button>
+      <button class="login-tab" id="loginTabCadastro" onclick="loginSetTab('cadastro')">Criar conta</button>
+    </div>
+    <!-- ENTRAR -->
+    <div id="loginPanelEntrar">
+      <div class="login-field">
+        <label>E-mail</label>
+        <input type="email" id="loginEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <div class="login-field">
+        <label>Senha</label>
+        <input type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar no BSHub</button>
+      <div class="login-erro" id="loginErro"></div>
+    </div>
+    <!-- CADASTRO -->
+    <div id="loginPanelCadastro" style="display:none;">
+      <div class="login-field">
+        <label>E-mail</label>
+        <input type="email" id="cadEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')fazerCadastro()">
+      </div>
+      <div class="login-field">
+        <label>Senha</label>
+        <input type="password" id="cadSenha" placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter')fazerCadastro()">
+      </div>
+      <div class="login-field">
+        <label>Confirmar senha</label>
+        <input type="password" id="cadSenha2" placeholder="Repita a senha" onkeydown="if(event.key==='Enter')fazerCadastro()">
+      </div>
+      <button class="login-btn" id="cadBtn" onclick="fazerCadastro()">Criar conta gratuita</button>
+      <div class="login-erro" id="cadErro"></div>
+    </div>
+    <div class="login-sep">BSHub · Software para escritórios contábeis</div>
+  </div>
+</div>
+
 <div class="header">
   <img id="logoImg" src="" alt="BS">
   <div class="hd-sep"></div>
@@ -1250,12 +1622,19 @@ body.light .toolbar-lote{background:rgba(37,99,235,.05);border-bottom-color:rgba
       <button class="hbtn" onclick="openPainelAnual();fecharMenuMobile()" id="btnAnual">📋 <span>Anuais</span></button>
       <button class="hbtn" onclick="openCalendario();fecharMenuMobile()" id="btnCalendario">📅 <span>Calendário</span></button>
       </div>
-      <button class="hbtn" onclick="gerarPDF();fecharMenuMobile()">🖨 <span>Relatório PDF</span></button>
       <button class="hbtn" onclick="openDashboard();fecharMenuMobile()">📊 <span>Painel</span></button>
-      <button class="hbtn" onclick="gerarRelatorioMensal()">📄 <span>Relatório</span></button>
-      <button class="hbtn" onclick="openExportModal();fecharMenuMobile()">📋 <span>Exportar</span></button>
-      <button class="hbtn" onclick="openBackupModal();fecharMenuMobile()">💾 <span>Backup</span></button>
+      <div style="position:relative;display:inline-flex;">
+        <button class="hbtn" onclick="toggleMenuRelatorio(this)" id="btnRelatorio">📄 <span>Relatório</span> <span style="font-size:9px;opacity:.6;">▾</span></button>
+        <div id="menuRelatorio" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border2);border-radius:var(--radius-xs);box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:210px;overflow:hidden;z-index:200;">
+          <div onclick="gerarRelatorioMensal();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">📄 Relatório Mensal</div>
+          <div style="height:1px;background:var(--border);"></div>
+          <div onclick="gerarPDF();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">🖨 Relatório por Grupo</div>
+        </div>
+      </div>
+      <button class="hbtn" onclick="exportarLocal();fecharMenuMobile()">💾 <span>Exportar</span></button>
+      <button class="tab-manual-btn" id="btnManual" onclick="toggleManual()">📖 Manual</button>
       <button class="hbtn" onclick="openRotinasModal();fecharMenuMobile()">⚙ <span>Rotinas</span></button>
+      <button class="hbtn danger" onclick="fazerLogout()" title="Sair" style="margin-left:4px;">⏻</button>
     </div>
     <button class="hbtn primary" onclick="openAddEmpresa()">+ <span>Empresa</span></button>
   </div>
@@ -1317,23 +1696,8 @@ body.light .toolbar-lote{background:rgba(37,99,235,.05);border-bottom-color:rgba
     <option value="">Todas as rotinas</option>
   </select>
   <div class="stats-bar" id="statsBar"></div>
-  <button class="btn-lote-toggle" id="btnLoteToggle" onclick="toggleModoSelecao()" title="Seleção em lote">☑ Lote</button>
 </div>
 
-<!-- BARRA DE LOTE -->
-<div class="toolbar-lote" id="toolbarLote">
-  <span class="lote-info" id="loteInfo">0 selecionadas</span>
-  <button class="lote-btn cancel" onclick="selectAll()">✓ Todas</button>
-  <button class="lote-btn cancel" onclick="deselectAll()">✕ Limpar</button>
-  <select class="lote-rotina-sel" id="loteRotinaSelect">
-    <option value="">Selecionar rotina...</option>
-  </select>
-  <button class="lote-btn primary" onclick="marcarLote()">✓ Marcar rotina</button>
-  <button class="lote-btn danger" onclick="desmarcarLote()">✕ Desmarcar rotina</button>
-  <div style="margin-left:auto;">
-    <button class="lote-btn cancel" onclick="toggleModoSelecao()">Cancelar</button>
-  </div>
-</div>
 
 <!-- PROGRESS -->
 <div class="progress-wrap">
@@ -1348,6 +1712,131 @@ body.light .toolbar-lote{background:rgba(37,99,235,.05);border-bottom-color:rgba
     <div class="empty-icon" id="emptyIcon">🏢</div>
     <div class="empty-title" id="emptyTitle">Nenhuma empresa neste grupo</div>
     <div class="empty-desc" id="emptyDesc">Clique em <strong>+ Empresa</strong> para adicionar a primeira empresa.</div>
+  </div>
+</div>
+
+<!-- ABA MANUAL -->
+<div id="tabManual">
+  <div class="manual-wrap">
+    <div class="manual-hero">
+      <div>
+        <div class="manual-hero-titulo">📖 Manual do BSHub</div>
+        <div class="manual-hero-sub">Guia completo de utilização do sistema</div>
+      </div>
+      <div class="manual-hero-versao">v2.9</div>
+    </div>
+
+    <!-- INÍCIO RÁPIDO -->
+    <div class="manual-secao">
+      <div class="manual-secao-titulo">🚀 Início rápido</div>
+      <div class="manual-passo">
+        <div class="manual-passo-num">1</div>
+        <div><div class="manual-passo-titulo">Criar grupos</div><div class="manual-passo-desc">Clique em <strong>⚙ Rotinas</strong> → aba Grupos para criar os grupos do seu escritório (ex: Departamento Pessoal, Contabilidade). Cada grupo vira uma aba na tela principal.</div></div>
+      </div>
+      <div class="manual-passo">
+        <div class="manual-passo-num">2</div>
+        <div><div class="manual-passo-titulo">Cadastrar rotinas</div><div class="manual-passo-desc">Em <strong>⚙ Rotinas</strong> configure as obrigações mensais (Folha, INSS, FGTS) e seus dias de vencimento. Você pode criar rotinas personalizadas.</div></div>
+      </div>
+      <div class="manual-passo">
+        <div class="manual-passo-num">3</div>
+        <div><div class="manual-passo-titulo">Adicionar empresas</div><div class="manual-passo-desc">Clique em <strong>+ Empresa</strong> no canto superior direito. Digite o CNPJ e clique em <strong>🔍 Buscar</strong> para preencher automaticamente os dados da Receita Federal.</div></div>
+      </div>
+      <div class="manual-passo">
+        <div class="manual-passo-num">4</div>
+        <div><div class="manual-passo-titulo">Controlar obrigações</div><div class="manual-passo-desc">No card de cada empresa, marque as obrigações conforme forem sendo concluídas. Ao finalizar tudo, clique em <strong>"Entregar ao Cliente"</strong>.</div></div>
+      </div>
+    </div>
+
+    <!-- CARDS -->
+    <div class="manual-secao">
+      <div class="manual-secao-titulo">🃏 Entendendo os cards</div>
+      <div class="manual-grid">
+        <div class="manual-card"><div class="manual-card-icon">⬜</div><div class="manual-card-titulo">Card normal</div><div class="manual-card-desc">Empresa com obrigações pendentes. Botão cinza "Entregar ao Cliente".</div></div>
+        <div class="manual-card"><div class="manual-card-icon">🔴</div><div class="manual-card-titulo">Card vermelho</div><div class="manual-card-desc">Empresa com subtarefas pendentes não concluídas no mês.</div></div>
+        <div class="manual-card"><div class="manual-card-icon">🟡</div><div class="manual-card-titulo">Botão pulsante</div><div class="manual-card-desc">Todas as obrigações marcadas mas ainda não entregue ao cliente.</div></div>
+        <div class="manual-card"><div class="manual-card-icon">✅</div><div class="manual-card-titulo">Card verde</div><div class="manual-card-desc">Empresa entregue ao cliente. Badge da aba muda para verde.</div></div>
+      </div>
+      <div class="manual-callout info">
+        <div class="manual-callout-icon">💡</div>
+        <div><div class="manual-callout-titulo">Badge da aba</div><div class="manual-callout-desc">O número vermelho na aba só vai para zero quando todas as empresas forem marcadas como <strong>"Entregue ao Cliente"</strong> — não basta marcar as obrigações.</div></div>
+      </div>
+    </div>
+
+    <!-- FUNCIONALIDADES -->
+    <div class="manual-secao">
+      <div class="manual-secao-titulo">⚡ Funcionalidades principais</div>
+      <table class="manual-tabela">
+        <thead><tr><th>Funcionalidade</th><th>Como usar</th></tr></thead>
+        <tbody>
+          <tr><td><strong>🔍 Busca CNPJ</strong></td><td>No cadastro da empresa, digite o CNPJ e clique em Buscar para preencher automaticamente os dados da Receita Federal.</td></tr>
+          <tr><td><strong>📌 Subtarefas fixadas</strong></td><td>Clique no 📌 para fixar uma subtarefa. Ela aparecerá em todos os meses, sempre desmarcada.</td></tr>
+          <tr><td><strong>🧾 MEI</strong></td><td>Marque "Empresa MEI" no cadastro para ativar o botão de acesso rápido ao PGMEI e NFS-e no card.</td></tr>
+          <tr><td><strong>📋 Múltiplos grupos</strong></td><td>Uma empresa pode pertencer a mais de um grupo simultaneamente. Selecione os grupos desejados no cadastro.</td></tr>
+          <tr><td><strong>📅 Obrigações anuais</strong></td><td>Cadastre DASN, DMED, Balanço etc. no formulário da empresa. Acesse pelo botão 📋 Anuais no topo.</td></tr>
+          <tr><td><strong>📊 Dashboard</strong></td><td>Clique em Painel para ver o progresso do escritório, ranking de grupos, alertas e histórico dos últimos meses.</td></tr>
+          <tr><td><strong>📄 Relatório</strong></td><td>Clique em Relatório para gerar PDF mensal do escritório ou relatório por grupo.</td></tr>
+          <tr><td><strong>📋 Duplicar empresa</strong></td><td>Clique no ícone de cópia no card para duplicar todos os dados de uma empresa (exceto CNPJ e código).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- OBRIGAÇÕES ANUAIS -->
+    <div class="manual-secao">
+      <div class="manual-secao-titulo">📅 Obrigações anuais</div>
+      <div class="manual-passo">
+        <div class="manual-passo-num">1</div>
+        <div><div class="manual-passo-titulo">Cadastrar</div><div class="manual-passo-desc">Abra o cadastro da empresa → seção <strong>"📋 Obrigações Anuais"</strong> → informe o nome (ex: DASN) e o mês de vencimento → clique em Add.</div></div>
+      </div>
+      <div class="manual-passo">
+        <div class="manual-passo-num">2</div>
+        <div><div class="manual-passo-titulo">Acompanhar</div><div class="manual-passo-desc">Clique em <strong>📋 Anuais</strong> no header. Alterne entre "Por Mês" e "Por Empresa" para ver o status de cada obrigação anual.</div></div>
+      </div>
+      <div class="manual-passo">
+        <div class="manual-passo-num">3</div>
+        <div><div class="manual-passo-titulo">Concluir</div><div class="manual-passo-desc">Clique no checkbox ao lado da obrigação para marcar como concluída. A data é registrada automaticamente.</div></div>
+      </div>
+      <div class="manual-callout aviso">
+        <div class="manual-callout-icon">⚠️</div>
+        <div><div class="manual-callout-titulo">Isolamento total</div><div class="manual-callout-desc">Obrigações anuais <strong>não aparecem nos cards mensais</strong> — ficam exclusivamente no Painel Anual, sem interferir no fluxo mensal.</div></div>
+      </div>
+    </div>
+
+    <!-- PORTAIS -->
+    <div class="manual-secao">
+      <div class="manual-secao-titulo">🔗 Portais e links rápidos</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">A barra de links rápidos no topo é totalmente configurável. Acesse <strong>⚙ Rotinas</strong> → seção Links Rápidos para adicionar, editar ou remover portais.</p>
+      <div class="manual-callout dica">
+        <div class="manual-callout-icon">✨</div>
+        <div><div class="manual-callout-titulo">URL mudou?</div><div class="manual-callout-desc">Se um portal do governo mudar sua URL, atualize em <strong>⚙ Rotinas → Links Rápidos</strong> em segundos — sem precisar alterar o código.</div></div>
+      </div>
+    </div>
+
+    <!-- ATALHOS -->
+    <div class="manual-secao">
+      <div class="manual-secao-titulo">⌨️ Atalhos de teclado</div>
+      <table class="manual-tabela">
+        <thead><tr><th>Atalho</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr><td><code style="background:var(--bg3);padding:2px 7px;border-radius:4px;font-size:11px;">Ctrl + F</code> ou <code style="background:var(--bg3);padding:2px 7px;border-radius:4px;font-size:11px;">/</code></td><td>Focar na busca global</td></tr>
+          <tr><td><code style="background:var(--bg3);padding:2px 7px;border-radius:4px;font-size:11px;">Esc</code></td><td>Fechar qualquer modal ou painel</td></tr>
+          <tr><td><code style="background:var(--bg3);padding:2px 7px;border-radius:4px;font-size:11px;">Enter</code></td><td>Adicionar subtarefa (no campo de texto)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- EXPORTAR -->
+    <div class="manual-secao">
+      <div class="manual-secao-titulo">💾 Exportar dados</div>
+      <div class="manual-grid">
+        <div class="manual-card"><div class="manual-card-icon">⬇️</div><div class="manual-card-titulo">Backup .json</div><div class="manual-card-desc">Exporta todos os dados do sistema em formato JSON para guardar localmente.</div></div>
+        <div class="manual-card"><div class="manual-card-icon">📊</div><div class="manual-card-titulo">CSV / Excel</div><div class="manual-card-desc">Exporta a lista de empresas com todos os dados para abrir no Excel.</div></div>
+      </div>
+      <div class="manual-callout info">
+        <div class="manual-callout-icon">💡</div>
+        <div><div class="manual-callout-titulo">Dica</div><div class="manual-callout-desc">Acesse o exportador pelo botão <strong>💾 Exportar</strong> no header. Use o backup .json para migrar dados entre dispositivos ou como segurança extra.</div></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1517,149 +2006,31 @@ body.light .toolbar-lote{background:rgba(37,99,235,.05);border-bottom-color:rgba
 </div>
 </div>
 
-<!-- MODAL BACKUP -->
+<!-- MODAL EXPORT LOCAL -->
 <div class="overlay" id="overlayBackup" onclick="closeOverlay('overlayBackup',event)">
-<div class="modal" onclick="event.stopPropagation()" style="max-width:420px;">
-  <h3>💾 Backup</h3>
-
-  <!-- TABS BACKUP -->
-  <div style="display:flex;gap:4px;margin-bottom:14px;">
-    <button id="bkpTabOneDrive" onclick="bkpSetTab('onedrive')"
-      style="flex:1;padding:7px;border-radius:var(--radius-xs);border:1px solid #0078d4;background:#0078d4;color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
-      OneDrive
-    </button>
-    <button id="bkpTabGoogle" onclick="bkpSetTab('google')"
-      style="flex:1;padding:7px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">
-      Google Drive
-    </button>
-    <button id="bkpTabLocal" onclick="bkpSetTab('local')"
-      style="flex:1;padding:7px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;">
-      Local
-    </button>
-  </div>
-
-  <!-- PAINEL ONEDRIVE -->
-  <div id="bkpPanelOnedrive">
-
-    <!-- CONFIG CLIENT ID OneDrive -->
-    <div id="odConfigBox" style="display:none;background:var(--bg3);border:1px solid var(--yellow);border-radius:8px;padding:13px;margin-bottom:10px;">
-      <div style="font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:6px;">⚙ Configurar Azure App ID</div>
-      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;line-height:1.6;">
-        1. Acesse <a href="https://portal.azure.com" target="_blank" style="color:#0078d4;">portal.azure.com</a><br>
-        2. Azure Active Directory → <b>App Registrations → New registration</b><br>
-        3. Nome: BSHub · Tipo: <b>Accounts in any org + personal</b><br>
-        4. Redirect URI: <b>Single-page application (SPA)</b> → <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">https://login.microsoftonline.com/common/oauth2/nativeclient</code><br>
-        5. API permissions → Add → <b>Files.ReadWrite</b><br>
-        6. Copie o <b>Application (client) ID</b> abaixo
-      </div>
-      <input id="odInputClientId" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:11px;outline:none;margin-bottom:7px;font-family:'Courier New',monospace;">
-      <button class="btn-save" style="width:100%;background:#0078d4;" onclick="odSalvarClientId()">Salvar App ID</button>
-    </div>
-
-    <!-- STATUS ONEDRIVE -->
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <div id="odStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
-        <div id="odStatusText" style="font-size:11px;color:var(--text2);flex:1;">Não conectado ao OneDrive</div>
-        <button onclick="odToggleConfig()" style="background:none;border:1px solid var(--border);color:var(--text3);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;">⚙</button>
-      </div>
-      <div id="odBtns" style="display:flex;gap:6px;flex-direction:column;">
-        <button id="odBtnConectar" style="width:100%;padding:9px;border-radius:6px;border:none;background:#0078d4;color:#fff;cursor:pointer;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;" onclick="odConectar()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
-          Conectar com Microsoft
-        </button>
-        <button id="odBtnDesconectar" style="display:none;width:100%;padding:7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;" onclick="odDesconectar()">Desconectar conta</button>
-      </div>
-    </div>
-
-    <!-- AÇÕES ONEDRIVE -->
-    <div id="odAcoes" style="display:none;flex-direction:column;gap:8px;">
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">☁ Salvar no OneDrive</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:9px;">Salva/atualiza <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">BSHub_backup.json</code> no seu OneDrive.</div>
-        <button style="width:100%;padding:9px;border-radius:6px;border:none;background:#0078d4;color:#fff;cursor:pointer;font-size:11px;font-weight:700;" onclick="odSalvar()">☁ Salvar no OneDrive Agora</button>
-        <div id="odUltimoSalvo" style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center;"></div>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">⬇ Restaurar do OneDrive</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:9px;">Carrega o último backup salvo no OneDrive.</div>
-        <button style="width:100%;padding:9px;border-radius:6px;border:1.5px solid var(--red);background:rgba(239,68,68,.08);color:#f87171;cursor:pointer;font-size:11px;font-weight:700;" onclick="odRestaurar()">⬇ Restaurar do OneDrive</button>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- PAINEL GOOGLE DRIVE -->
-  <div id="bkpPanelGoogle" style="display:none;">
-
-    <!-- CONFIG CLIENT ID -->
-    <div id="gdConfigBox" style="display:none;background:var(--bg3);border:1px solid var(--yellow);border-radius:8px;padding:13px;margin-bottom:10px;">
-      <div style="font-size:11px;font-weight:700;color:var(--yellow);margin-bottom:6px;">⚙ Configurar Google Client ID</div>
-      <div style="font-size:10px;color:var(--text2);margin-bottom:8px;line-height:1.6;">
-        1. Acesse <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">console.cloud.google.com</a><br>
-        2. Crie um projeto → APIs → <b>Google Drive API</b> → Ativar<br>
-        3. Credenciais → Criar → <b>ID do cliente OAuth</b> → Aplicativo da Web<br>
-        4. Em "Origens JS autorizadas" adicione a URL onde usa o sistema<br>
-        5. Cole o <b>Client ID</b> abaixo e salve
-      </div>
-      <input id="inputClientId" type="text" placeholder="000000000000-xxxx.apps.googleusercontent.com"
-        style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:11px;outline:none;margin-bottom:7px;font-family:'Courier New',monospace;">
-      <button class="btn-save" style="width:100%" onclick="salvarClientId()">Salvar Client ID</button>
-    </div>
-
-    <!-- STATUS GOOGLE -->
-    <div id="gdStatusBox" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <div id="gdStatusDot" style="width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;"></div>
-        <div id="gdStatusText" style="font-size:11px;color:var(--text2);flex:1;">Não conectado ao Google Drive</div>
-        <button id="gdConfigBtn" onclick="toggleGdConfig()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid var(--border);">⚙</button>
-      </div>
-      <div id="gdBtns" style="display:flex;gap:6px;flex-direction:column;">
-        <button id="btnConectar" class="btn-save" style="width:100%;padding:9px;background:#4285f4;" onclick="conectarGoogle()">
-          <svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Conectar com Google
-        </button>
-        <button id="btnDesconectar" style="display:none;width:100%;padding:7px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:11px;" onclick="desconectarGoogle()">Desconectar conta</button>
-      </div>
-    </div>
-
-    <!-- AÇÕES DRIVE -->
-    <div id="gdAcoes" style="display:none;flex-direction:column;gap:8px;">
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">☁ Salvar no Google Drive</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:9px;">Salva/atualiza o arquivo <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">BSHub_backup.json</code> na raiz do seu Drive.</div>
-        <button class="btn-save" style="width:100%;padding:9px;" onclick="salvarNoDrive()">☁ Salvar no Drive Agora</button>
-        <div id="gdUltimoSalvo" style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center;"></div>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">⬇ Restaurar do Google Drive</div>
-        <div style="font-size:10px;color:var(--text2);margin-bottom:9px;">Carrega o último backup salvo no Drive.</div>
-        <button style="width:100%;padding:9px;border-radius:6px;border:1.5px solid var(--red);background:rgba(239,68,68,.08);color:#f87171;cursor:pointer;font-size:11px;font-weight:700;" onclick="restaurarDoDrive()">⬇ Restaurar do Drive</button>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- PAINEL LOCAL -->
-  <div id="bkpPanelLocal" style="display:none;">
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;margin-bottom:8px;">
-      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">⬇ Exportar Backup</div>
-      <div style="font-size:10px;color:var(--text2);margin-bottom:9px;">Salva todos os dados em um arquivo <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">.json</code> no seu dispositivo.</div>
+<div class="modal" onclick="event.stopPropagation()" style="max-width:400px;">
+  <h3>💾 Exportar / Importar Dados</h3>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">⬇ Exportar backup</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Salva todos os dados em um arquivo <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">.json</code> no seu computador.</div>
       <button class="btn-save" style="width:100%;padding:9px;" onclick="exportarBackup()">⬇ Baixar .json</button>
     </div>
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:13px;">
-      <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:3px;">⬆ Restaurar Backup</div>
-      <div style="font-size:10px;color:var(--text2);margin-bottom:9px;">Selecione um arquivo <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">.json</code> gerado por este sistema.</div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">📊 Exportar CSV</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Exporta a lista de empresas para o Excel.</div>
+      <button class="btn-save" style="width:100%;padding:9px;" onclick="exportarCSV()">📊 Baixar CSV</button>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">⬆ Restaurar backup</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Carrega um arquivo <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">.json</code> gerado por este sistema.</div>
       <label style="display:block;width:100%;padding:9px;background:rgba(239,68,68,.06);border:1px dashed rgba(239,68,68,.3);border-radius:6px;color:#f87171;font-size:11px;font-weight:700;text-align:center;cursor:pointer;">
         ⬆ Selecionar Arquivo
         <input type="file" accept=".json" onchange="restaurarBackup(event)" style="display:none">
       </label>
     </div>
   </div>
-
-  <div class="modal-btns" style="margin-top:12px;">
+  <div class="modal-btns">
     <button class="btn-cancel" onclick="closeOverlay('overlayBackup')">Fechar</button>
   </div>
 </div>
@@ -1910,11 +2281,9 @@ body.light .toolbar-lote{background:rgba(37,99,235,.05);border-bottom-color:rgba
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== LOGO =====
-document.getElementById('logoImg').src='data:image/png;base64,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';
 
 // ===== BASE DATA =====
-const BASE_CLIENTES = {"CGC":[{"id":"CGC_1","cod":"RG","nome":"RG REPRESENTAÇÃO","doc":"09324817000190","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_2","cod":"TOMAZI","nome":"RICARDO TOMAZI","doc":"27431009000103","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_3","cod":"CAROLINAGORA","nome":"CAROLINA HAGEN MEI AGORA","doc":"53963957000108","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_4","cod":"CENTR040","nome":"CENTRAL PLANEJAMENTOS","doc":"33259219000169","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_5","cod":"CFC586","nome":"CFC - one drive","doc":"03413054000177","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"CGC_6","cod":"HR FOTOC","nome":"CGC","doc":"04211878000127","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_7","cod":"CONAS080","nome":"CONASA","doc":"03805626000163","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"CGC_8","cod":"CONSULTORIO","nome":"CONSULTORIO MATILDE","doc":"62118172000111","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_9","cod":"GRANTDE","nome":"DESPACHANTE GRANTURRA","doc":"21118597000143","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_10","cod":"TORNEADO","nome":"EDNEI MENDES BARBOSA","doc":"26443163000132","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_11","cod":"ELIANE","nome":"ELIANE ADV E ASSO","doc":"06096458000172","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_12","cod":"LAYSA","nome":"LAYSA DUARTE","doc":"46975571000142","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_13","cod":"GOTARDO","nome":"GOTARDO SERV RURAIS","doc":"46315822000162","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_14","cod":"FISK","nome":"INSTITUTO DE IDIOMAS","doc":"73952574000133","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_15","cod":"LISBOARIBEIRO","nome":"LISBOA E RIBEIRO","doc":"61139748000164","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_16","cod":"RISQUE","nome":"MIL JUCA GRANJA - one drive","doc":"08761117000108","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_17","cod":"MOLAS468","nome":"MOLAS CRISTALINA LTDA","doc":"00142609000103","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_18","cod":"NEGRAO","nome":"NEGRAO SERV","doc":"58088136000185","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_19","cod":"PLANA583","nome":"PLANALTO","doc":"07398669000122","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_20","cod":"REPRFACHINETTO","nome":"REPRESENTACOES FACHINETTO LTDA","doc":"60098033000148","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_21","cod":"AGRCOMAR","nome":"REPRESENTAÇÃO AGROC - one drive","doc":"31857698000190","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_22","cod":"SIGIHARA","nome":"RICARDO SIGIHARA (EMAIL)","doc":"29040561000104","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_23","cod":"PETSHOP","nome":"RODRIGO SANTIAGO","doc":"20641558000163","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_24","cod":"CLINICDF","nome":"RODRIGO SANTIAGO DF","doc":"42480739000198","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_25","cod":"SAMET","nome":"SAMET","doc":"10546516000190","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_26","cod":"SCOPE597","nome":"SCOPEL (lucros esporadicos)","doc":"06029286000114","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_27","cod":"","nome":"SOLOCHINSK GESTAO","doc":"55844011000140","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_28","cod":"TIA DO AÇAI","nome":"TIA DO AÇAI","doc":"54150752000168","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_29","cod":"TEK","nome":"TEK","doc":"14445049000162","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_30","cod":"VHC","nome":"VHC CRUZ","doc":"54709083000111","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"CGC_31","cod":"VIDROBOX","nome":"VIDRO","doc":"04051060000194","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_32","cod":"CRISTIAN","nome":"CRISTIANO ROCHA JONAS","doc":"09659594658","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_33","cod":"ZEMAU 579","nome":"JOSE MAURO","doc":"21060916649","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_34","cod":"LUIS","nome":"LUIS OTAVIO","doc":"17545914856","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_35","cod":"RENATO","nome":"RENATO ZOBOLI","doc":"43171516934","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_36","cod":"THIAGO","nome":"THIAGO","doc":"04687595650","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_37","cod":"VOLNEI","nome":"VOLNEI ZOBOLI","doc":"72856190197","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_38","cod":"SOELI","nome":"SOELI SANDRI","doc":"53352084149","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_39","cod":"ANDREIA","nome":"ANDREIA ZOBOLI","doc":"98629441100","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_41","cod":"MATILDE","nome":"MATILDE YURIKO","doc":"44027591968","grupo":"CGC","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_43","cod":"ELIANE","nome":"ELIANE LEONEL","doc":"53178181920","grupo":"CGC","folha":true,"inss":false,"fgts":false,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_44","cod":"ROSANE","nome":"ROSANE C. CRUZ (EMAIL)","doc":"40250121115","grupo":"CGC","folha":true,"inss":false,"fgts":false,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"CGC_45","cod":"RG","nome":"GASPAR","doc":"","grupo":"CGC","folha":true,"inss":false,"fgts":false,"consignado":false,"horas":false,"ativo":true,"obs":""}],"BS":[{"id":"BS_1","cod":"ANDRESER","nome":"Andre Serviços Agricolas","doc":"46520157000149","grupo":"BS","folha":true,"inss":false,"fgts":false,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_2","cod":"BRUNO","nome":"BARBEARIA BRUNO","doc":"28495516000173","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_3","cod":"BSCONTAB","nome":"BS CONTABILIDADE","doc":"35997565000170","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_4","cod":"CAMPOLIM","nome":"CAMPO LIMPO","doc":"37523137000130","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_5","cod":"CONSTRURCS","nome":"CONTRUTORA RCS","doc":"49365313000132","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_6","cod":"CLINMAIS","nome":"CLIN MAIS ODONTOLOGIA - one drive","doc":"21174181000142","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"BS_7","cod":"DROGAFAM","nome":"DROGARIA DA FAMILIA -  one drive","doc":"24475661000131","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"BS_8","cod":"DROGASC","nome":"DROGARIA SALOMAO - one drive","doc":"27180403000116","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_9","cod":"DROGLUZIA","nome":"DROGARIA BORGES E CASTRO - one drive","doc":"39825828000114","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_10","cod":"DROGVERUSSA","nome":"DROGARIA VERUSSA","doc":"62933004000180","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_11","cod":"DROGARIA","nome":"FARMACIA DO TRABALHADOR - one drive","doc":"29424292000171","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_12","cod":"DISTDEPEÇAS","nome":"DISTRIBUIDORA DE PEÇAS CRISTALINA LTDA","doc":"58377422000160","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_13","cod":"FABIOBARB","nome":"FABIO BARBOSA","doc":"45186174000129","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_14","cod":"EDUARDO","nome":"CPF 03977847163 Senha Efuardo12*","doc":"32227596000153","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_15","cod":"ESPARTA","nome":"ESPARTA TREINAMENTOS","doc":"52689886000126","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_16","cod":"FERNANDA","nome":"FERNANDA UCHOA","doc":"28215017000185","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_17","cod":"FABRICIO","nome":"FABRICIO SANTANA DOS SANTOS","doc":"33210910000158","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_18","cod":"HANNOVER","nome":"HANNOVER","doc":"52559391000182","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_19","cod":"","nome":"LUCIANA JOIAS","doc":"","grupo":"BS","folha":false,"inss":false,"fgts":false,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_20","cod":"MARPEC","nome":"MARCELO PEÇAS one drive","doc":"24253887000198","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_21","cod":"MARIAMADA","nome":"MADALENA","doc":"12629651000124","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_22","cod":"","nome":"MOOD PE","doc":"54598387000159","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_23","cod":"NATHANAELL","nome":"NATHANAELL BRASIL","doc":"51503627000104","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_24","cod":"AREGRAIA","nome":"ROBERTO RODRIGUES","doc":"13767316000155","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_25","cod":"SPACE","nome":"SPACE AUDIO","doc":"26949781000159","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"BS_26","cod":"SANTAANA","nome":"SANTA ANA AGRONEGOCIOS","doc":"39758816000114","grupo":"BS","folha":true,"inss":false,"fgts":false,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"BS_27","cod":"TORNEADORA","nome":"TORNEADORA GTA","doc":"52312344000130","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_28","cod":"BRUNOSIST","nome":"BRUNO CPF 04161969180 Bru@281095","doc":"53156191000141","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"BS_29","cod":"JOAO","nome":"JOAO GENTIL","doc":"48706763000189","grupo":"BS","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""}],"Brauler":[{"id":"Brauler_1","cod":"ARIARC","nome":"ARIARC","doc":"04968161000124","grupo":"Brauler","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler_2","cod":"ALEXANDRE","nome":"Alexandre Carlos","doc":"83765840149","grupo":"Brauler","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler_3","cod":"CARLOSAL","nome":"Carlos Alberto","doc":"07743263878","grupo":"Brauler","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""}],"Sandra":[{"id":"Sandra_2","cod":"","nome":"ASSOC DE PAIS, MESTRES E FUNC DO COL  OLGA MOHN (P I S)","doc":"52670938000112","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_3","cod":"","nome":"ASSOCIAÇÃO DOS ARTESÃOS DE CRIST   (P I S)","doc":"04980466000151","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_4","cod":"","nome":"IGREJA EVANG ASSEMBLEIA DE DEUS  (P I S)","doc":"36863330000158","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_5","cod":"","nome":"RC CONSULT, PLANEJ AGRON E SERV ADM LTDA","doc":"11190355000107","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_6","cod":"","nome":"VALTER MALAGUTTI (Fim do mês)","doc":"82073404000170","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_7","cod":"","nome":"VALTER MALAGUTTI - FILIAL (Fim do mês)","doc":"82073404000250","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_8","cod":"","nome":"AGLAILTON BRANDÃO NEG IMOBIL LTDA","doc":"29112990000131","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_9","cod":"","nome":"AGROIRRIGACAO LTDA","doc":"46512392000179","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_10","cod":"","nome":"AGROIRRIGACAO SERVICOS ESPECIALIZADOS LTDA","doc":"32619107000109","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_11","cod":"","nome":"ALESSANDO ADV","doc":"27547467000102","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_12","cod":"","nome":"AGS LAPID ARTE JOIAS CRISTALINA LTDA","doc":"50734481000137","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_13","cod":"","nome":"CANTIM MINEIRO","doc":"55376330000178","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_14","cod":"","nome":"CRISTAL MUNCK SERVIÇOS ESPECIALIZADOS LTDA (Pai)","doc":"54253360000124","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_15","cod":"","nome":"CLAITON CAIXETA","doc":"02444961102","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_16","cod":"","nome":"D A Cuidados Medicos","doc":"58751134000124","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_17","cod":"","nome":"DISTRIBUIDORA NOGUEIRA DIAS LTDA","doc":"50433575000176","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_18","cod":"","nome":"GINALDO DA SILVA OLIVEIRA","doc":"50836260000170","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_19","cod":"","nome":"INSTITUTO AQUARELA MD TERAPIAS INTEGRADAS LTDA","doc":"45779506000189","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_20","cod":"","nome":"LAFAET PINTURAS","doc":"58179824000150","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_21","cod":"","nome":"LEFER COSMETICOS  E PERFUMA LTDA ME","doc":"23908063000146","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_22","cod":"","nome":"CINTRA RODRIGUES","doc":"60304344000116","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_23","cod":"","nome":"L & R MODA INFANTIL LTDA (Fim do mês) leidy","doc":"08304283000177","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_24","cod":"","nome":"Leonardo Cortes Carvalho","doc":"45914982000165","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_25","cod":"","nome":"LOTERICA ALPHAVILLE LTDA (mês seguinte)","doc":"40193170000154","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_26","cod":"","nome":"MILTON MUNCK LTDA (mês seguinte)","doc":"44168568000191","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_27","cod":"","nome":"PANIFICADORA & MERC AVENIDA LTDA","doc":"02231059000116","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_28","cod":"","nome":"ORIGEM ANALISES AGRIC LTDA (Fim do mês)","doc":"18133556000111","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_29","cod":"","nome":"RICARDO CIMADON","doc":"46509817000190","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":true,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_30","cod":"","nome":"RICARDO CIMADO SERVIÇOS","doc":"56294171000125","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_31","cod":"","nome":"SONHO VERDE HOTEL E REST BORTOLOTI","doc":"36585357000126","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_32","cod":"","nome":"SUPER RIO SUPERMERCADO LTDA","doc":"45093946000188","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_33","cod":"","nome":"TALENTO CONSTRUTORA EIRELI","doc":"27192711000161","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_34","cod":"","nome":"TELEPIZZA TOIZINHO","doc":"42865805000148","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_35","cod":"","nome":"TJ SERVIÇOS","doc":"60166433000143","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_36","cod":"","nome":"T. S. CONSTRUTORA E TRANSPORTES LTDA","doc":"46908676000189","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_37","cod":"","nome":"TEIXEIRA ASSESSORIA E CONSULTORIA LTDA","doc":"53169923000138","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_38","cod":"","nome":"TUBARÃO COLHEITAS LTDA","doc":"38390012000142","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_39","cod":"","nome":"Doce Maria","doc":"47249085000100","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_40","cod":"","nome":"VALTER MALAGUTTI - DOMÉSTICA","doc":"20444176934","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_41","cod":"","nome":"VITOR ALBERTO SIMAO DOMESTICA","doc":"43167284072","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_42","cod":"","nome":"VITOR ALBERTO SIMAO 61","doc":"43167284072","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Sandra_46","cod":"","nome":"IGREJA APOST C. INTERN GRACA E VIDA  (P I S)","doc":"10971135000158","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":"SEM MOVIMENTO"},{"id":"Sandra_47","cod":"","nome":"ROSANGELA DE OLIVEIRA MATOS","doc":"07843388000131","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":"SEM MOVIMENTO"},{"id":"Sandra_48","cod":"","nome":"DINAMICA SOLO LTDA (Fim do mês)","doc":"30170621000184","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":false,"obs":"SUSPENSO EM 01/03/2026"},{"id":"Sandra_49","cod":"","nome":"ALOJAMENTO CRISTALINA LTDA","doc":"49829721000106","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":true,"ativo":false,"obs":"SUSPENSO 25/11"},{"id":"Sandra_50","cod":"","nome":"CRISTALINA TUR LTDA","doc":"50273662000103","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":false,"obs":"SUSPENSO"},{"id":"Sandra_51","cod":"","nome":"Mente Fascinante","doc":"53325331000168","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":"SEM MOV"},{"id":"Sandra_52","cod":"","nome":"A & E SILVA & SILVA TRANSPORTES LTDA","doc":"54557261000136","grupo":"Sandra","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":false,"obs":"SUSPENSO 01/04"}],"Brauler Selma":[{"id":"Brauler Selma_1","cod":"MULTI","nome":"MULTI SAUDE","doc":"60599697000190","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_2","cod":"LUGAR","nome":"LUGAR ARQUITETURA","doc":"60611088000100","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_3","cod":"POWER GR","nome":"POWER GREEN","doc":"59192590000144","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_4","cod":"JOAO KALEB","nome":"JOAO PAULO 06251349158 Senha 250223cK.","doc":"58068639000199","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_5","cod":"PEDRO RUBIANE","nome":"DOMESTICA CPF 047.010.611-58  02Juaninha@","doc":"04701061158","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_6","cod":"DIEGO","nome":"DIEGO LG 2710Dieg@@@","doc":"00279754108","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_7","cod":"IRINEIA","nome":"IRINEIA GABRIELA APOGEU","doc":"54406402000110","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_8","cod":"VANESSA","nome":"VANESSA cpf 02271050103 S: Loja090623#","doc":"35902175000179     31876043000169","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_9","cod":"CRISTALMOBI","nome":"CRISTALMOBI","doc":"48987329000114","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_10","cod":"SOMASTEC","nome":"SOMASTEC","doc":"59307776000100","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_11","cod":"MARCELO","nome":"MARCELO COMAR - Mcom2626@","doc":"03704124605","grupo":"Brauler Selma","folha":false,"inss":false,"fgts":false,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_12","cod":"ROSANEA","nome":"ROSANEA BRUNO SISTEMA","doc":"CD","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_13","cod":"NABILA","nome":"Nabila Kamel Joias LTDA","doc":"55645574000109","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_14","cod":"NAYANE","nome":"NAYANE SICREDI","doc":"MEI PARCELAMENTO","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_15","cod":"CASAESABOR","nome":"CASA E SABOR","doc":"63809045000121","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_16","cod":"","nome":"MARK","doc":"50988748000112","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_17","cod":"","nome":"EDSON LUIS DA SILVA 45634076153","doc":"CGCcontabil456@","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""},{"id":"Brauler Selma_18","cod":"","nome":"DR BRUNA SELMA","doc":"","grupo":"Brauler Selma","folha":true,"inss":true,"fgts":true,"consignado":false,"horas":false,"ativo":true,"obs":""}]};
+const BASE_CLIENTES = {};
 
 const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -1941,8 +2310,8 @@ function saveState(){
 let state=loadState();
 if(!state){
   state={
-    grupos:['CGC','BS','Brauler','Sandra','Brauler Selma'],
-    grupoColors:{CGC:'#3b82f6',BS:'#8b5cf6',Brauler:'#f59e0b',Sandra:'#ec4899','Brauler Selma':'#06b6d4'},
+    grupos:[],
+    grupoColors:{},
     clientes:{},
     rotinas:[...ROTINAS_DEFAULT],
     obrigacoes:{},
@@ -1955,8 +2324,8 @@ if(!state){
 }else{
   // migrate: ensure rotinas exist
   if(!state.rotinas)state.rotinas=[...ROTINAS_DEFAULT];
-  if(!state.grupos)state.grupos=['CGC','BS','Brauler','Sandra','Brauler Selma'];
-  if(!state.grupoColors)state.grupoColors={CGC:'#3b82f6',BS:'#8b5cf6',Brauler:'#f59e0b',Sandra:'#ec4899','Brauler Selma':'#06b6d4'};
+  if(!state.grupos)state.grupos=[];
+  if(!state.grupoColors)state.grupoColors={};
   // merge new base clients
   Object.keys(BASE_CLIENTES).forEach(g=>{
     if(!state.clientes[g])state.clientes[g]=[];
@@ -2007,7 +2376,7 @@ if(!state.portais||!state.portais.length){state.portais=JSON.parse(JSON.stringif
 saveState();
 
 // ===== MES/ANO =====
-let currentGrupo=state.grupos[0]||'CGC';
+let currentGrupo=state.grupos[0]||'';
 let currentMes=new Date().getMonth();
 let currentAno=new Date().getFullYear();
 let currentFilter='all';
@@ -2272,8 +2641,7 @@ function buildCard(c){
 
   const subPend=!entregue&&temSubtarefaPendente(c.id);
   const selAttr=`data-cid="${c.id}"`;
-  return `<div class="ccard${!c.ativo?' inativo':''}${entregue?' entregue':''}${subPend?' sub-pendente':''}" id="card_${c.id}" onclick="handleCardClick(event,'${c.id}')">
-    <input type="checkbox" class="ccard-checkbox" id="chk_${c.id}" onclick="event.stopPropagation();toggleSelectCard('${c.id}',this)">
+  return `<div class="ccard${!c.ativo?' inativo':''}${entregue?' entregue':''}${subPend?' sub-pendente':''}" id="card_${c.id}">
     <div class="ccard-bar" style="background:linear-gradient(90deg,${color},${color}66)"></div>
     <div class="card-head">
       <div class="cavatar" style="background:linear-gradient(135deg,${color} 0%,${color}88 100%)">${initials}</div>
@@ -3079,363 +3447,6 @@ function toast(msg,type='success'){
   setTimeout(()=>t.className='toast',2600);
 }
 
-// ===== BACKUP & GOOGLE DRIVE =====
-
-const GD_CLIENT_ID_KEY = 'bshub_gd_client_id';
-const GD_FILE_NAME = 'BSHub_backup.json';
-const GD_SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
-let gdAccessToken = null;
-let gdFileId = null; // ID do arquivo no Drive
-let tokenClient = null;
-let gapiReady = false;
-let gisReady = false;
-
-function getSavedClientId(){
-  return localStorage.getItem(GD_CLIENT_ID_KEY)||'';
-}
-
-function openBackupModal(){
-  atualizarStatusGD();
-  odAtualizarStatus();
-  const savedId=getSavedClientId();
-  document.getElementById('inputClientId').value=savedId;
-  document.getElementById('gdConfigBox').style.display=savedId?'none':'block';
-  if(savedId&&!gapiReady)inicializarGoogleAPIs();
-  bkpSetTab('onedrive');
-  document.getElementById('overlayBackup').classList.add('open');
-}
-
-// ===== BACKUP TABS =====
-function bkpSetTab(tab){
-  const tabs=['onedrive','google','local'];
-  const colors={onedrive:'#0078d4',google:'var(--accent)',local:'var(--accent)'};
-  tabs.forEach(t=>{
-    const btn=document.getElementById('bkpTab'+t.charAt(0).toUpperCase()+t.slice(1));
-    const panel=document.getElementById('bkpPanel'+t.charAt(0).toUpperCase()+t.slice(1));
-    if(!btn||!panel)return;
-    const active=t===tab;
-    btn.style.background=active?colors[t]:'var(--bg3)';
-    btn.style.borderColor=active?colors[t]:'var(--border)';
-    btn.style.color=active?'#fff':'var(--text2)';
-    panel.style.display=active?'block':'none';
-  });
-}
-
-// ===== ONEDRIVE BACKUP =====
-const OD_CLIENT_ID_KEY='bshub_od_client_id';
-const OD_FILE_NAME='BSHub_backup.json';
-let odAccessToken=null;
-
-function odGetClientId(){return localStorage.getItem(OD_CLIENT_ID_KEY)||'';}
-function odSetClientId(v){localStorage.setItem(OD_CLIENT_ID_KEY,v.trim());}
-
-function odToggleConfig(){
-  const box=document.getElementById('odConfigBox');
-  if(box)box.style.display=box.style.display==='none'?'block':'none';
-}
-
-function odSalvarClientId(){
-  const val=document.getElementById('odInputClientId').value.trim();
-  if(!val){toast('Cole o App ID!','error');return;}
-  odSetClientId(val);
-  document.getElementById('odConfigBox').style.display='none';
-  odAtualizarStatus();
-  toast('App ID salvo!','success');
-}
-
-function odAtualizarStatus(){
-  const dot=document.getElementById('odStatusDot');
-  const txt=document.getElementById('odStatusText');
-  const btnC=document.getElementById('odBtnConectar');
-  const btnD=document.getElementById('odBtnDesconectar');
-  const acoes=document.getElementById('odAcoes');
-  if(!dot)return;
-  if(odAccessToken){
-    dot.style.background='var(--green2)';
-    txt.textContent='Conectado ao OneDrive ✓';
-    if(btnC)btnC.style.display='none';
-    if(btnD)btnD.style.display='block';
-    if(acoes)acoes.style.display='flex';
-    const ult=localStorage.getItem('bshub_od_ultimo');
-    const el=document.getElementById('odUltimoSalvo');
-    if(ult&&el)el.textContent='Último backup: '+ult;
-  }else{
-    const cid=odGetClientId();
-    dot.style.background=cid?'var(--yellow)':'var(--text3)';
-    txt.textContent=cid?'App ID configurado — clique para conectar':'Não configurado';
-    if(btnC)btnC.style.display='block';
-    if(btnD)btnD.style.display='none';
-    if(acoes)acoes.style.display='none';
-  }
-}
-
-function odConectar(){
-  const clientId=odGetClientId();
-  if(!clientId){
-    document.getElementById('odConfigBox').style.display='block';
-    toast('Configure o App ID primeiro','error');
-    return;
-  }
-  const redirectUri='https://login.microsoftonline.com/common/oauth2/nativeclient';
-  const authUrl='https://login.microsoftonline.com/common/oauth2/v2.0/authorize'+
-    '?client_id='+clientId+
-    '&response_type=token'+
-    '&redirect_uri='+encodeURIComponent(redirectUri)+
-    '&scope='+encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite offline_access')+
-    '&response_mode=fragment';
-  const popup=window.open(authUrl,'_blank','width=520,height=650,left=200,top=100');
-  const timer=setInterval(()=>{
-    try{
-      const url=popup.location.href;
-      if(url.includes('access_token=')){
-        const params=new URLSearchParams(url.split('#')[1]);
-        odAccessToken=params.get('access_token');
-        clearInterval(timer);
-        popup.close();
-        odAtualizarStatus();
-        toast('✓ OneDrive conectado!','success');
-      }
-    }catch(e){}
-    if(popup.closed)clearInterval(timer);
-  },600);
-}
-
-function odDesconectar(){
-  odAccessToken=null;
-  odAtualizarStatus();
-  toast('Desconectado do OneDrive','success');
-}
-
-async function odSalvar(){
-  if(!odAccessToken){toast('Conecte ao OneDrive primeiro','error');return;}
-  toast('Salvando no OneDrive...','success');
-  try{
-    const conteudo=JSON.stringify(state,null,2);
-    const resp=await fetch(
-      'https://graph.microsoft.com/v1.0/me/drive/root:/'+OD_FILE_NAME+':/content',
-      {method:'PUT',headers:{'Authorization':'Bearer '+odAccessToken,'Content-Type':'application/json'},body:conteudo}
-    );
-    if(!resp.ok)throw new Error(await resp.text());
-    const now=new Date().toLocaleString('pt-BR');
-    localStorage.setItem('bshub_od_ultimo',now);
-    const el=document.getElementById('odUltimoSalvo');
-    if(el)el.textContent='Último backup: '+now;
-    toast('✓ Salvo no OneDrive!','success');
-  }catch(e){
-    console.error(e);
-    toast('Erro ao salvar. Tente reconectar.','error');
-  }
-}
-
-async function odRestaurar(){
-  if(!odAccessToken){toast('Conecte ao OneDrive primeiro','error');return;}
-  toast('Buscando backup...','success');
-  try{
-    const resp=await fetch(
-      'https://graph.microsoft.com/v1.0/me/drive/root:/'+OD_FILE_NAME+':/content',
-      {headers:{'Authorization':'Bearer '+odAccessToken}}
-    );
-    if(resp.status===404){toast('Nenhum backup encontrado no OneDrive','error');return;}
-    const dados=await resp.json();
-    if(!dados.grupos||!dados.clientes){toast('Arquivo inválido no OneDrive','error');return;}
-    confirm2('Restaurar do OneDrive?','Os dados atuais serão substituídos pelo backup.',()=>{
-      Object.assign(state,dados);
-      saveState();
-      currentGrupo=state.grupos[0]||'';
-      closeOverlay('overlayBackup');
-      renderAll();
-      toast('✓ Dados restaurados do OneDrive!','success');
-    });
-  }catch(e){
-    console.error(e);
-    toast('Erro ao restaurar. Tente reconectar.','error');
-  }
-}
-
-function toggleGdConfig(){
-  const box = document.getElementById('gdConfigBox');
-  box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
-
-function salvarClientId(){
-  const val = document.getElementById('inputClientId').value.trim();
-  if(!val){ toast('Cole o Client ID!','error'); return; }
-  localStorage.setItem(GD_CLIENT_ID_KEY, val);
-  document.getElementById('gdConfigBox').style.display = 'none';
-  gapiReady = false; gisReady = false; gdAccessToken = null;
-  inicializarGoogleAPIs();
-  toast('Client ID salvo!','success');
-}
-
-function atualizarStatusGD(){
-  const dot = document.getElementById('gdStatusDot');
-  const txt = document.getElementById('gdStatusText');
-  const btnC = document.getElementById('btnConectar');
-  const btnD = document.getElementById('btnDesconectar');
-  const acoes = document.getElementById('gdAcoes');
-  if(gdAccessToken){
-    dot.style.background = 'var(--green)';
-    txt.textContent = 'Conectado ao Google Drive ✓';
-    btnC.style.display = 'none';
-    btnD.style.display = 'block';
-    acoes.style.display = 'flex';
-    // mostra último salvo
-    const ult = localStorage.getItem('bshub_gd_ultimo');
-    if(ult) document.getElementById('gdUltimoSalvo').textContent = 'Último backup: '+ult;
-  } else {
-    dot.style.background = getSavedClientId() ? 'var(--yellow)' : 'var(--text3)';
-    txt.textContent = getSavedClientId() ? 'Client ID configurado — clique para conectar' : 'Não configurado';
-    btnC.style.display = 'block';
-    btnD.style.display = 'none';
-    acoes.style.display = 'none';
-  }
-}
-
-function inicializarGoogleAPIs(){
-  const clientId = getSavedClientId();
-  if(!clientId) return;
-
-  // Carrega GAPI
-  if(!document.getElementById('gapiScript')){
-    const s = document.createElement('script');
-    s.id = 'gapiScript';
-    s.src = 'https://apis.google.com/js/api.js';
-    s.onload = ()=>{
-      gapi.load('client', async ()=>{
-        await gapi.client.init({ discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-        gapiReady = true;
-      });
-    };
-    document.head.appendChild(s);
-  }
-
-  // Carrega GIS
-  if(!document.getElementById('gisScript')){
-    const s = document.createElement('script');
-    s.id = 'gisScript';
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = ()=>{
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: GD_SCOPES,
-        callback: async (resp)=>{
-          if(resp.error){ toast('Erro ao conectar: '+resp.error,'error'); return; }
-          gdAccessToken = resp.access_token;
-          gapi.client.setToken({access_token: gdAccessToken});
-          atualizarStatusGD();
-          toast('✓ Google Drive conectado!','success');
-        }
-      });
-      gisReady = true;
-    };
-    document.head.appendChild(s);
-  }
-}
-
-function conectarGoogle(){
-  const clientId = getSavedClientId();
-  if(!clientId){
-    document.getElementById('gdConfigBox').style.display = 'block';
-    toast('Configure o Client ID primeiro','error');
-    return;
-  }
-  if(!gisReady){
-    inicializarGoogleAPIs();
-    toast('Carregando APIs do Google...','success');
-    setTimeout(()=>{ if(gisReady && tokenClient) tokenClient.requestAccessToken({prompt:''}); }, 2500);
-    return;
-  }
-  tokenClient.requestAccessToken({prompt:''});
-}
-
-function desconectarGoogle(){
-  if(gdAccessToken) google.accounts.oauth2.revoke(gdAccessToken);
-  gdAccessToken = null; gdFileId = null;
-  atualizarStatusGD();
-  toast('Desconectado do Google Drive','success');
-}
-
-async function buscarArquivoDrive(){
-  // Busca arquivo existente pelo nome
-  const res = await gapi.client.drive.files.list({
-    q: `name='${GD_FILE_NAME}' and trashed=false`,
-    fields: 'files(id,name,modifiedTime)',
-    spaces: 'drive'
-  });
-  const files = res.result.files;
-  return files && files.length ? files[0] : null;
-}
-
-async function salvarNoDrive(){
-  if(!gdAccessToken){ toast('Conecte ao Google Drive primeiro','error'); return; }
-  try{
-    toast('Salvando no Drive...','success');
-    const conteudo = JSON.stringify(state, null, 2);
-    const arquivo = await buscarArquivoDrive();
-
-    const boundary = '-------bs_dp_boundary';
-    const metadata = JSON.stringify({name: GD_FILE_NAME, mimeType:'application/json'});
-    const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${conteudo}\r\n--${boundary}--`;
-
-    const method = arquivo ? 'PATCH' : 'POST';
-    const url = arquivo
-      ? `https://www.googleapis.com/upload/drive/v3/files/${arquivo.id}?uploadType=multipart`
-      : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-
-    const resp = await fetch(url, {
-      method,
-      headers: {
-        'Authorization': 'Bearer '+gdAccessToken,
-        'Content-Type': `multipart/related; boundary=${boundary}`
-      },
-      body
-    });
-
-    if(!resp.ok) throw new Error(await resp.text());
-
-    const now = new Date();
-    const stamp = now.toLocaleString('pt-BR');
-    localStorage.setItem('bshub_gd_ultimo', stamp);
-    document.getElementById('gdUltimoSalvo').textContent = 'Último backup: '+stamp;
-    toast('✓ Salvo no Google Drive!','success');
-  }catch(e){
-    console.error(e);
-    toast('Erro ao salvar no Drive. Tente reconectar.','error');
-  }
-}
-
-async function restaurarDoDrive(){
-  if(!gdAccessToken){ toast('Conecte ao Google Drive primeiro','error'); return; }
-  try{
-    toast('Buscando backup no Drive...','success');
-    const arquivo = await buscarArquivoDrive();
-    if(!arquivo){ toast('Nenhum backup encontrado no Drive','error'); return; }
-
-    const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${arquivo.id}?alt=media`, {
-      headers:{ 'Authorization':'Bearer '+gdAccessToken }
-    });
-    const dados = await resp.json();
-    if(!dados.grupos||!dados.clientes){ toast('Arquivo inválido no Drive','error'); return; }
-
-    confirm2(
-      'Restaurar do Google Drive?',
-      'Os dados atuais serão substituídos pelo backup do Drive.',
-      ()=>{
-        Object.assign(state, dados);
-        saveState();
-        currentGrupo = state.grupos[0]||'';
-        closeOverlay('overlayBackup');
-        renderAll();
-        toast('✓ Dados restaurados do Drive!','success');
-      }
-    );
-  }catch(e){
-    console.error(e);
-    toast('Erro ao restaurar do Drive. Tente reconectar.','error');
-  }
-}
-
 // ===== BACKUP LOCAL =====
 function exportarBackup(){
   const data = JSON.stringify(state, null, 2);
@@ -3473,8 +3484,6 @@ function restaurarBackup(event){
   reader.readAsText(file);
 }
 
-// Inicializa APIs ao carregar se já tem Client ID
-if(getSavedClientId()) inicializarGoogleAPIs();
 
 
 // ===== MENU MOBILE =====
@@ -4453,6 +4462,26 @@ async function buscarCNPJ(){
     });
   }
 }
+// ===== MENU RELATÓRIO =====
+function toggleMenuRelatorio(btn){
+  const menu = document.getElementById('menuRelatorio');
+  if(!menu) return;
+  const aberto = menu.style.display === 'block';
+  menu.style.display = aberto ? 'none' : 'block';
+  if(!aberto){
+    setTimeout(()=>document.addEventListener('click', fecharMenuRelatorio, {once:true}), 50);
+  }
+}
+function fecharMenuRelatorio(){
+  const menu = document.getElementById('menuRelatorio');
+  if(menu) menu.style.display = 'none';
+}
+
+// ===== EXPORTAR LOCAL (abre modal simplificado) =====
+function exportarLocal(){
+  openBackupModal();
+}
+
 // ===== PORTAIS / LINKS RÁPIDOS =====
 
 function ensurePortais(){
@@ -5154,132 +5183,6 @@ function atualizarContadorSub(cid){
 
 
 // ============================================================
-// ===== 3. MARCAÇÃO EM LOTE =====
-// ============================================================
-let modoSelecao = false;
-let selecionadas = new Set();
-
-function toggleModoSelecao(){
-  modoSelecao = !modoSelecao;
-  selecionadas.clear();
-  const grid = document.getElementById('clientGrid');
-  const barra = document.getElementById('toolbarLote');
-  const btn = document.getElementById('btnLoteToggle');
-  if(modoSelecao){
-    grid.classList.add('modo-selecao');
-    barra.classList.add('ativo');
-    btn.classList.add('ativo');
-    // Popular select de rotinas
-    const sel = document.getElementById('loteRotinaSelect');
-    sel.innerHTML = '<option value="">Selecionar rotina...</option>' +
-      state.rotinas.map(r=>`<option value="${r.id}">${r.nome}</option>`).join('');
-  }else{
-    grid.classList.remove('modo-selecao');
-    barra.classList.remove('ativo');
-    btn.classList.remove('ativo');
-    // Desmarcar todos os checkboxes visuais
-    document.querySelectorAll('.ccard-checkbox').forEach(cb=>cb.checked=false);
-    document.querySelectorAll('.ccard.selecionado').forEach(c=>c.classList.remove('selecionado'));
-  }
-  atualizarInfoLote();
-}
-
-function handleCardClick(e, cid){
-  if(!modoSelecao) return;
-  // Evita trigger de outros clicks dentro do card
-  if(e.target.closest('.iBtn') || e.target.closest('.ob-check') ||
-     e.target.closest('.btn-entregar') || e.target.closest('.sub-check') ||
-     e.target.closest('.ccard-checkbox')) return;
-  const cb = document.getElementById('chk_'+cid);
-  if(cb){ cb.checked = !cb.checked; toggleSelectCard(cid, cb); }
-}
-
-function toggleSelectCard(cid, cb){
-  const card = document.getElementById('card_'+cid);
-  if(cb.checked){
-    selecionadas.add(cid);
-    card?.classList.add('selecionado');
-  }else{
-    selecionadas.delete(cid);
-    card?.classList.remove('selecionado');
-  }
-  atualizarInfoLote();
-}
-
-function atualizarInfoLote(){
-  const el = document.getElementById('loteInfo');
-  if(el) el.textContent = `${selecionadas.size} selecionada${selecionadas.size!==1?'s':''}`;
-}
-
-function selectAll(){
-  document.querySelectorAll('.ccard-checkbox').forEach(cb=>{
-    if(!cb.closest('.ccard.inativo')){
-      cb.checked = true;
-      const cid = cb.id.replace('chk_','');
-      selecionadas.add(cid);
-      document.getElementById('card_'+cid)?.classList.add('selecionado');
-    }
-  });
-  atualizarInfoLote();
-}
-
-function deselectAll(){
-  document.querySelectorAll('.ccard-checkbox').forEach(cb=>{ cb.checked=false; });
-  document.querySelectorAll('.ccard.selecionado').forEach(c=>c.classList.remove('selecionado'));
-  selecionadas.clear();
-  atualizarInfoLote();
-}
-
-function marcarLote(){
-  const rid = document.getElementById('loteRotinaSelect').value;
-  if(!rid){ toast('Selecione uma rotina!','error'); return; }
-  if(!selecionadas.size){ toast('Selecione ao menos uma empresa!','error'); return; }
-  const now = new Date();
-  const d = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}`;
-  let count = 0;
-  selecionadas.forEach(cid=>{
-    const c = findCliente(cid);
-    if(!c) return;
-    const rotinas = getRotinasByCliente(c);
-    if(!rotinas.find(r=>r.id===rid)) return; // empresa não tem essa rotina
-    const k = obKey(cid, rid);
-    if(!state.obrigacoes[k]){
-      state.obrigacoes[k] = true;
-      state.obrigacoes[k+'_d'] = d;
-      count++;
-    }
-  });
-  saveState();
-  renderCards();
-  renderTabs();
-  updateProgress();
-  toast(`✓ ${count} empresa${count!==1?'s':''} marcada${count!==1?'s':''}!`,'success');
-}
-
-function desmarcarLote(){
-  const rid = document.getElementById('loteRotinaSelect').value;
-  if(!rid){ toast('Selecione uma rotina!','error'); return; }
-  if(!selecionadas.size){ toast('Selecione ao menos uma empresa!','error'); return; }
-  let count = 0;
-  selecionadas.forEach(cid=>{
-    const k = obKey(cid, rid);
-    if(state.obrigacoes[k]){
-      delete state.obrigacoes[k];
-      delete state.obrigacoes[k+'_d'];
-      // Se estava entregue, reverte
-      const ek = entKey(cid);
-      if(state.entregues[ek]) delete state.entregues[ek];
-      count++;
-    }
-  });
-  saveState();
-  renderCards();
-  renderTabs();
-  updateProgress();
-  toast(`✕ ${count} empresa${count!==1?'s':''} desmarcada${count!==1?'s':''}!`,'error');
-}
-
-// ============================================================
 // ===== 4. DUPLICAR EMPRESA =====
 // ============================================================
 function duplicarEmpresa(cid){
@@ -5479,6 +5382,176 @@ ${dadosGrupos.map(({g,comRotinas,entregues,pendentes,color})=>{
   w.document.close();
 }
 
+
+// ============================================================
+// ===== SUPABASE — CONFIGURAÇÃO =====
+// ============================================================
+const SUPABASE_URL = 'https://wkmzwxulthnbezctqhxv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_OZaW-lKMLOvGNauYJaaJeQ_NX3AFEUh';
+
+let supabase = null;
+let currentUser = null;
+let escritorioId = null;
+
+function initSupabase(){
+  try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return true;
+  } catch(e) {
+    console.warn('Supabase não disponível, usando localStorage:', e);
+    return false;
+  }
+}
+
+// ============================================================
+// ===== AUTENTICAÇÃO =====
+// ============================================================
+function loginSetTab(tab){
+  document.getElementById('loginPanelEntrar').style.display   = tab==='entrar'   ? 'block' : 'none';
+  document.getElementById('loginPanelCadastro').style.display = tab==='cadastro' ? 'block' : 'none';
+  document.getElementById('loginTabEntrar').classList.toggle('active',   tab==='entrar');
+  document.getElementById('loginTabCadastro').classList.toggle('active', tab==='cadastro');
+  document.getElementById('loginErro').style.display = 'none';
+  document.getElementById('cadErro').style.display   = 'none';
+}
+
+function mostrarErroLogin(msg){ 
+  const el = document.getElementById('loginErro');
+  el.textContent = msg; el.style.display = 'block';
+}
+function mostrarErroCad(msg){ 
+  const el = document.getElementById('cadErro');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function fazerLogin(){
+  const email  = document.getElementById('loginEmail').value.trim();
+  const senha  = document.getElementById('loginSenha').value;
+  if(!email || !senha){ mostrarErroLogin('Preencha e-mail e senha.'); return; }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    if(supabase){
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: senha });
+      if(error) throw error;
+      currentUser = data.user;
+      await carregarEscritorioSupabase();
+    } else {
+      // Modo offline: simula login com localStorage
+      currentUser = { id: 'local', email };
+    }
+    entrarNoSistema();
+  } catch(e) {
+    mostrarErroLogin(traduzirErroAuth(e.message));
+    btn.disabled = false; btn.textContent = 'Entrar no BSHub';
+  }
+}
+
+async function fazerCadastro(){
+  const email  = document.getElementById('cadEmail').value.trim();
+  const senha  = document.getElementById('cadSenha').value;
+  const senha2 = document.getElementById('cadSenha2').value;
+  if(!email || !senha){ mostrarErroCad('Preencha todos os campos.'); return; }
+  if(senha.length < 6){ mostrarErroCad('A senha deve ter no mínimo 6 caracteres.'); return; }
+  if(senha !== senha2){ mostrarErroCad('As senhas não conferem.'); return; }
+  const btn = document.getElementById('cadBtn');
+  btn.disabled = true; btn.textContent = 'Criando conta...';
+  try {
+    if(supabase){
+      const { data, error } = await supabase.auth.signUp({ email, password: senha });
+      if(error) throw error;
+      currentUser = data.user;
+      await carregarEscritorioSupabase();
+    } else {
+      currentUser = { id: 'local', email };
+    }
+    entrarNoSistema();
+  } catch(e) {
+    mostrarErroCad(traduzirErroAuth(e.message));
+    btn.disabled = false; btn.textContent = 'Criar conta gratuita';
+  }
+}
+
+async function carregarEscritorioSupabase(){
+  if(!supabase || !currentUser) return;
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('escritorio_id')
+      .eq('id', currentUser.id)
+      .single();
+    if(data) escritorioId = data.escritorio_id;
+  } catch(e) {
+    console.warn('Erro ao carregar escritório:', e);
+  }
+}
+
+function traduzirErroAuth(msg){
+  if(msg.includes('Invalid login')) return 'E-mail ou senha incorretos.';
+  if(msg.includes('Email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
+  if(msg.includes('User already registered')) return 'Este e-mail já está cadastrado.';
+  if(msg.includes('Password should be')) return 'A senha deve ter no mínimo 6 caracteres.';
+  if(msg.includes('Unable to validate')) return 'E-mail inválido.';
+  return msg;
+}
+
+function entrarNoSistema(){
+  document.getElementById('telaLogin').style.display = 'none';
+  document.getElementById('sistemaMain').style.display = 'block';
+  renderAll();
+  renderLinksBar();
+  aplicarRecorrenciaAuto();
+  setTimeout(atualizarBadgeCalendario, 600);
+}
+
+async function fazerLogout(){
+  confirm2('Sair do BSHub?', 'Você será redirecionado para a tela de login.', async ()=>{
+    if(supabase) await supabase.auth.signOut();
+    currentUser = null;
+    escritorioId = null;
+    const tl=document.getElementById('telaLogin'); if(tl) tl.style.display='flex';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginSenha').value = '';
+    document.getElementById('loginErro').style.display = 'none';
+  });
+}
+
+// ============================================================
+// ===== ABA MANUAL =====
+// ============================================================
+let manualAberto = false;
+
+function toggleManual(){
+  manualAberto = !manualAberto;
+  const main = document.querySelector('.content');
+  const empty = document.getElementById('emptyState');
+  const tabManual = document.getElementById('tabManual');
+  const tabs = document.querySelector('.tabs-wrap');
+  const toolbar = document.querySelector('.toolbar');
+  const progress = document.querySelector('.progress-wrap');
+  const btn = document.getElementById('btnManual');
+
+  if(manualAberto){
+    if(main) main.style.display='none';
+    if(empty) empty.style.display='none';
+    if(tabs) tabs.style.display='none';
+    if(toolbar) toolbar.style.display='none';
+    if(progress) progress.style.display='none';
+    tabManual.style.display='block';
+    btn.classList.add('ativo');
+    btn.textContent='✕ Fechar Manual';
+  }else{
+    tabManual.style.display='none';
+    if(main) main.style.display='';
+    if(tabs) tabs.style.display='';
+    if(toolbar) toolbar.style.display='';
+    if(progress) progress.style.display='';
+    btn.classList.remove('ativo');
+    btn.textContent='📖 Manual';
+    renderCards();
+  }
+}
+
 // Migração de estado: garante subStatus e subImportar existem
 if(!state.subStatus)state.subStatus={};
 if(!state.subtarefas)state.subtarefas={};
@@ -5493,13 +5566,9 @@ if(!state.portais||!Array.isArray(state.portais)||!state.portais.length){
 document.getElementById('mesLabel').textContent=MESES[currentMes].slice(0,3)+' '+currentAno;
 popularFiltroRotina();
 renderAll();
-aplicarRecorrenciaAuto();
-// renderLinksBar com delay para garantir DOM pronto e state inicializado
 setTimeout(()=>{
-  try{ renderLinksBar(); }
-  catch(e){ console.warn('renderLinksBar error:', e); }
+  try{ renderLinksBar(); }catch(e){}
 }, 100);
-// Badge do calendário
 setTimeout(atualizarBadgeCalendario, 600);
 
 // ===== OBRIGAÇÕES ANUAIS =====
