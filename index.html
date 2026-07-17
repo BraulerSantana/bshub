@@ -1601,13 +1601,30 @@ async function carregarPerfilEIniciar(user){
       if(btnD){btnD.disabled=false;btnD.textContent='Entrar →';}
       return;
     }
+    // Verifica status e vencimento do escritório (só admin/colaborador — super_admin passa direto)
+    if(!perfil.super_admin){
+      const {data:esc}=await sb.from('escritorios').select('status, plano_vence_em, nome').eq('id',perfil.escritorio_id).single();
+      if(esc){
+        const hoje=new Date().toISOString().slice(0,10);
+        const vencido=esc.plano_vence_em && esc.plano_vence_em < hoje;
+        if(esc.status==='suspenso' || esc.status==='cancelado' || vencido){
+          const motivo = esc.status==='cancelado'?'cancelado' : (vencido?'vencido':'suspenso');
+          mostrarErroAuth('authErro',`Acesso ${motivo}. Para regularizar, entre em contato: suporte@bshub.com.br`);
+          await sb.auth.signOut();
+          const btnS=document.getElementById('authBtnLogin');
+          if(btnS){btnS.disabled=false;btnS.textContent='Entrar →';}
+          return;
+        }
+      }
+    }
     // Atualiza usuarioAtual globalmente (definido no config-estado)
     usuarioAtual={
       id:user.id,
       email:user.email,
       nome:perfil.nome||user.email,
       role:perfil.role,
-      escritorio_id:perfil.escritorio_id
+      escritorio_id:perfil.escritorio_id,
+      super_admin:!!perfil.super_admin
     };
     // Esconde login
     document.getElementById('authOverlay').style.display='none';
@@ -1754,6 +1771,7 @@ async function salvarNovaSenha(){
       <button class="hbtn" onclick="openDashboard();fecharMenuMobile()">📊 <span>Painel</span></button>
       <button class="hbtn" onclick="openFinanceiro();fecharMenuMobile()" id="btnFinanceiro" title="Relatório financeiro de honorários">💰 <span>Financeiro</span></button>
       <button class="hbtn" onclick="abrirModalEquipe();fecharMenuMobile()" id="btnConvidar" title="Gerenciar equipe e convidar colaboradores">👥 <span>Equipe</span></button>
+      <button class="hbtn" onclick="abrirPainelEscritorios();fecharMenuMobile()" id="btnEscritorios" title="Painel de escritórios (super-admin)" style="display:none;">🏢 <span>Escritórios</span></button>
       <div style="position:relative;display:inline-flex;">
         <button class="hbtn" onclick="toggleMenuRelatorio(this)" id="btnRelatorio">📄 <span>Relatório</span> <span style="font-size:9px;opacity:.6;">▾</span></button>
         <div id="menuRelatorio" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border2);border-radius:var(--radius-xs);box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:210px;overflow:hidden;z-index:200;">
@@ -3348,6 +3366,212 @@ async function salvarGruposColaborador(uid){
 
 function isAdmin(){return usuarioAtual.role==='admin';}
 function podeExcluir(){return isAdmin();}
+function isSuperAdmin(){return !!usuarioAtual.super_admin;}
+
+// -------------------------------------------------------------------
+// PAINEL 🏢 ESCRITÓRIOS (super-admin) — gestão de todos os escritórios
+// -------------------------------------------------------------------
+async function abrirPainelEscritorios(){
+  if(!isSuperAdmin()){toast('Acesso restrito','error');return;}
+  const [{data:escritorios,error:e1},{data:perfisAdmin,error:e2},{data:empresasCount,error:e3}]=await Promise.all([
+    sb.from('escritorios').select('id, nome, status, plano_vence_em, observacoes, suspenso_em, suspenso_motivo, criado_em').order('nome'),
+    sb.from('profiles').select('id, nome, email, escritorio_id').eq('role','admin'),
+    sb.from('empresas').select('escritorio_id, ativo')
+  ]);
+  if(e1||e2||e3){toast('Erro ao carregar: '+(e1?.message||e2?.message||e3?.message),'error');return;}
+  const hoje=new Date().toISOString().slice(0,10);
+  // Conta empresas por escritório
+  const contEmp={};
+  (empresasCount||[]).forEach(e=>{
+    if(!contEmp[e.escritorio_id])contEmp[e.escritorio_id]={ativas:0,total:0};
+    contEmp[e.escritorio_id].total++;
+    if(e.ativo!==false)contEmp[e.escritorio_id].ativas++;
+  });
+  // Mapa admin por escritório
+  const adminPorEsc={};
+  (perfisAdmin||[]).forEach(p=>{if(!adminPorEsc[p.escritorio_id])adminPorEsc[p.escritorio_id]=p;});
+  const linhas=(escritorios||[]).map(esc=>{
+    const adm=adminPorEsc[esc.id];
+    const emp=contEmp[esc.id]||{ativas:0,total:0};
+    const vencido=esc.plano_vence_em && esc.plano_vence_em < hoje;
+    let statusLabel, statusCor;
+    if(esc.status==='cancelado'){statusLabel='CANCELADO';statusCor='#b91c1c';}
+    else if(esc.status==='suspenso'){statusLabel='SUSPENSO';statusCor='#dc2626';}
+    else if(vencido){statusLabel='VENCIDO';statusCor='#ea580c';}
+    else statusLabel='ATIVO';
+    const corVenc=vencido?'#b91c1c':(esc.plano_vence_em && esc.plano_vence_em < new Date(Date.now()+7*864e5).toISOString().slice(0,10)?'#ea580c':'#0f172a');
+    const vencFmt=esc.plano_vence_em?esc.plano_vence_em.split('-').reverse().join('/'):'—';
+    const bloqueado=esc.status==='suspenso'||esc.status==='cancelado'||vencido;
+    return `<div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;${bloqueado?'background:#fef7f7;':''}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="min-width:0;flex:1;">
+          <div style="font-size:14.5px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            ${esc.nome}
+            ${statusLabel!=='ATIVO'?`<span style="font-size:10px;background:${statusCor};color:#fff;padding:2px 8px;border-radius:10px;font-weight:800;">${statusLabel}</span>`:''}
+          </div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:3px;">
+            ${adm?`👤 ${adm.nome} (${adm.email})`:'<em style="color:#dc2626;">sem admin cadastrado</em>'}
+          </div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:2px;display:flex;gap:14px;flex-wrap:wrap;">
+            <span>🏢 ${emp.ativas} empresa${emp.ativas!==1?'s':''} ativa${emp.ativas!==1?'s':''}${emp.total!==emp.ativas?` (${emp.total} total)`:''}</span>
+            <span style="color:${corVenc};font-weight:${vencido?'800':'600'};">📅 Vence: ${vencFmt}</span>
+          </div>
+          ${esc.observacoes?`<div style="font-size:11px;color:#475569;margin-top:6px;padding:6px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #cbd5e1;">💬 ${esc.observacoes.replace(/</g,'&lt;')}</div>`:''}
+          ${esc.suspenso_motivo?`<div style="font-size:11px;color:#b91c1c;margin-top:4px;">⚠️ ${esc.suspenso_motivo.replace(/</g,'&lt;')}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;">
+          <button onclick="editarEscritorio('${esc.id}')" style="padding:5px 10px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:7px;font-weight:700;font-size:11.5px;cursor:pointer;">✏️ Editar</button>
+          ${(esc.status==='suspenso'||esc.status==='cancelado')
+            ? `<button onclick="alterarStatusEscritorio('${esc.id}','ativo')" style="padding:5px 10px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;border-radius:7px;font-weight:700;font-size:11.5px;cursor:pointer;">✅ Reativar</button>`
+            : `<button onclick="alterarStatusEscritorio('${esc.id}','suspenso')" style="padding:5px 10px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:7px;font-weight:700;font-size:11.5px;cursor:pointer;">🚫 Suspender</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('overlayEscritorios')?.remove();
+  const ov=document.createElement('div');
+  ov.id='overlayEscritorios';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const totalAtivos=(escritorios||[]).filter(e=>e.status!=='suspenso'&&e.status!=='cancelado'&&(!e.plano_vence_em||e.plano_vence_em>=hoje)).length;
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,.3);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="background:linear-gradient(135deg,#0f172a,#1e40af);color:#fff;padding:20px 24px;">
+      <div style="font-size:18px;font-weight:800;">🏢 Escritórios do BSHub</div>
+      <div style="font-size:12px;opacity:.9;margin-top:2px;">${(escritorios||[]).length} total · ${totalAtivos} ativos · ${(escritorios||[]).length-totalAtivos} inativos</div>
+    </div>
+    <div style="overflow-y:auto;flex:1;">${linhas||'<div style="padding:32px;text-align:center;color:#64748b;">Nenhum escritório ainda</div>'}</div>
+    <div style="padding:14px 24px;display:flex;justify-content:space-between;gap:8px;border-top:1px solid #e2e8f0;background:#f8fafc;">
+      <button onclick="document.getElementById('overlayEscritorios').remove()" style="padding:9px 16px;background:#f1f5f9;color:#0f172a;border:none;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Fechar</button>
+      <button onclick="abrirCadastroEscritorio()" style="padding:9px 18px;background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border:none;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">+ Cadastrar escritório</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+async function alterarStatusEscritorio(escId,novoStatus){
+  const motivo=novoStatus==='suspenso'?prompt('Motivo da suspensão (opcional):','Inadimplência'):null;
+  if(novoStatus==='suspenso' && motivo===null)return; // cancelou o prompt
+  try{
+    const patch={status:novoStatus};
+    if(novoStatus==='suspenso'){
+      patch.suspenso_em=new Date().toISOString();
+      patch.suspenso_motivo=motivo||null;
+    } else if(novoStatus==='ativo'){
+      patch.suspenso_em=null;
+      patch.suspenso_motivo=null;
+    }
+    const {error}=await sb.from('escritorios').update(patch).eq('id',escId);
+    if(error)throw error;
+    toast('Escritório '+(novoStatus==='ativo'?'reativado ✅':'suspenso 🚫'),novoStatus==='ativo'?'success':'error');
+    abrirPainelEscritorios();
+  }catch(e){toast('Erro: '+e.message,'error');}
+}
+
+async function editarEscritorio(escId){
+  const {data:esc,error}=await sb.from('escritorios').select('nome, plano_vence_em, observacoes').eq('id',escId).single();
+  if(error){toast('Erro: '+error.message,'error');return;}
+  document.getElementById('overlayEditEsc')?.remove();
+  const venc=esc.plano_vence_em||'';
+  const ov=document.createElement('div');
+  ov.id='overlayEditEsc';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:420px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,.35);overflow:hidden;">
+    <div style="padding:18px 22px;border-bottom:1px solid #e2e8f0;">
+      <div style="font-size:15px;font-weight:800;color:#0f172a;">Editar escritório</div>
+      <div style="font-size:11.5px;color:#64748b;">${esc.nome}</div>
+    </div>
+    <div style="padding:16px 22px;display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">DATA DE VENCIMENTO DO PLANO</label>
+        <input id="editVence" type="date" value="${venc}" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">OBSERVAÇÕES (só você vê)</label>
+        <textarea id="editObs" rows="3" placeholder="Ex.: veio pela indicação da Ana, gosta do produto..." style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;resize:vertical;font-family:inherit;">${(esc.observacoes||'').replace(/</g,'&lt;')}</textarea>
+      </div>
+    </div>
+    <div style="padding:12px 22px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #e2e8f0;">
+      <button onclick="document.getElementById('overlayEditEsc').remove()" style="padding:8px 14px;background:#f1f5f9;color:#0f172a;border:none;border-radius:7px;font-weight:700;font-size:12.5px;cursor:pointer;">Cancelar</button>
+      <button onclick="salvarEdicaoEscritorio('${escId}')" style="padding:8px 16px;background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border:none;border-radius:7px;font-weight:700;font-size:12.5px;cursor:pointer;">Salvar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+async function salvarEdicaoEscritorio(escId){
+  const vence=document.getElementById('editVence').value||null;
+  const obs=document.getElementById('editObs').value.trim()||null;
+  try{
+    const {error}=await sb.from('escritorios').update({plano_vence_em:vence,observacoes:obs}).eq('id',escId);
+    if(error)throw error;
+    document.getElementById('overlayEditEsc')?.remove();
+    toast('Salvo ✅','success');
+    abrirPainelEscritorios();
+  }catch(e){toast('Erro: '+e.message,'error');}
+}
+
+function abrirCadastroEscritorio(){
+  document.getElementById('overlayNovoEsc')?.remove();
+  // Padrão: 60 dias de piloto grátis
+  const vencPadrao=new Date(Date.now()+60*864e5).toISOString().slice(0,10);
+  const ov=document.createElement('div');
+  ov.id='overlayNovoEsc';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:460px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,.35);overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;padding:20px 24px;">
+      <div style="font-size:18px;font-weight:800;">+ Cadastrar novo escritório</div>
+      <div style="font-size:12px;opacity:.9;margin-top:2px;">O admin recebe convite por e-mail e cria a própria senha</div>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:12px;">
+      <input id="novoEscNome" type="text" placeholder="Nome do escritório (ex: Contabilidade Silva)" style="width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+      <input id="novoEscAdminNome" type="text" placeholder="Nome do administrador" style="width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+      <input id="novoEscAdminEmail" type="email" placeholder="E-mail do administrador" style="width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
+      <div>
+        <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">VENCIMENTO DO PLANO (padrão: 60 dias)</label>
+        <input id="novoEscVence" type="date" value="${vencPadrao}" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">OBSERVAÇÕES</label>
+        <textarea id="novoEscObs" rows="2" placeholder="Origem, contato, plano combinado..." style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;resize:vertical;font-family:inherit;"></textarea>
+      </div>
+    </div>
+    <div style="padding:14px 24px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #e2e8f0;">
+      <button onclick="document.getElementById('overlayNovoEsc').remove()" style="padding:9px 16px;background:#f1f5f9;color:#0f172a;border:none;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Cancelar</button>
+      <button id="btnCadastrarEsc" onclick="cadastrarNovoEscritorio()" style="padding:9px 18px;background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border:none;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">✉️ Cadastrar e enviar convite</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+async function cadastrarNovoEscritorio(){
+  const nome=document.getElementById('novoEscNome').value.trim();
+  const admNome=document.getElementById('novoEscAdminNome').value.trim();
+  const admEmail=document.getElementById('novoEscAdminEmail').value.trim().toLowerCase();
+  const vence=document.getElementById('novoEscVence').value||null;
+  const obs=document.getElementById('novoEscObs').value.trim()||null;
+  if(!nome){toast('Informe o nome do escritório','error');return;}
+  if(!admNome){toast('Informe o nome do administrador','error');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(admEmail)){toast('E-mail inválido','error');return;}
+  const btn=document.getElementById('btnCadastrarEsc');
+  btn.disabled=true;btn.textContent='Enviando...';
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error('Sessão expirada');
+    const resp=await fetch(SUPABASE_URL+'/functions/v1/convidar-admin-escritorio',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
+      body:JSON.stringify({escritorio_nome:nome,admin_nome:admNome,admin_email:admEmail,plano_vence_em:vence,observacoes:obs})
+    });
+    const out=await resp.json().catch(()=>({}));
+    if(!resp.ok||out.error)throw new Error(out.error||('HTTP '+resp.status));
+    document.getElementById('overlayNovoEsc')?.remove();
+    toast(`Escritório "${nome}" criado! Convite enviado para ${admEmail} ✉️`,'success');
+    abrirPainelEscritorios();
+  }catch(e){
+    console.error('[NovoEsc] Falha:',e);
+    toast('Erro: '+e.message,'error');
+    btn.disabled=false;btn.textContent='✉️ Cadastrar e enviar convite';
+  }
+}
 
 // ===== HELPERS FINANCEIROS =====
 function parseBRL(v){
@@ -8020,6 +8244,11 @@ function iniciarSistema(){
     document.getElementById('btnFinanceiro')?.remove();
     document.getElementById('btnAddEmpresa')?.remove();
     document.getElementById('btnConvidar')?.remove();
+  }
+  // 🏢 Painel de escritórios — só super-admin (o Brauler) enxerga
+  if(usuarioAtual.super_admin){
+    const btnEsc=document.getElementById('btnEscritorios');
+    if(btnEsc)btnEsc.style.display='';
   }
 }
 
