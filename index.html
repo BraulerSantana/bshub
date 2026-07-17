@@ -52,7 +52,10 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .mes-nav button:hover{background:var(--card2);border-color:var(--border2);color:var(--text);}
 .mes-label{font-size:12px;font-weight:800;background:linear-gradient(135deg,#60a5fa,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;min-width:108px;text-align:center;text-transform:uppercase;letter-spacing:.1em;}
 .header-actions{margin-left:auto;display:flex;gap:5px;align-items:center;}
-.hbtn{padding:6px 11px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap;transition:all .18s;display:flex;align-items:center;gap:5px;letter-spacing:.02em;}
+.hbtn{padding:6px 11px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:11px;font-weight:700;white-space:nowrap;transition:all .18s;display:flex;align-items:center;gap:6px;letter-spacing:.02em;}
+.hbtn svg{flex-shrink:0;stroke-width:2;opacity:.85;}
+.hbtn:hover svg{opacity:1;}
+.hbtn.primary svg{opacity:1;}
 .hbtn:hover{background:var(--card2);border-color:var(--border2);color:var(--text);transform:translateY(-1px);}
 .hbtn.primary{background:linear-gradient(135deg,var(--accent),#4f46e5);border-color:transparent;color:#fff;box-shadow:0 2px 12px rgba(37,99,235,.35);}
 .hbtn.primary:hover{background:linear-gradient(135deg,var(--accent2),#4338ca);box-shadow:0 4px 16px rgba(37,99,235,.45);transform:translateY(-1px);}
@@ -107,8 +110,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .tab:hover{color:var(--text2);background:var(--bg3);}
 .tab.active{background:var(--card);color:var(--text);border-color:var(--border);}
 .tab.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:var(--card);}
-.tab .cnt{display:inline-flex;align-items:center;justify-content:center;background:var(--red2);color:#fff;border-radius:20px;padding:0 6px;font-size:9px;min-width:18px;height:16px;font-weight:800;letter-spacing:0;}
-.tab .cnt.ok{background:var(--green2);}
+.tab .cnt{display:inline-flex;align-items:center;justify-content:center;background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:0 6px;font-size:10px;min-width:18px;height:16px;font-weight:700;letter-spacing:0;}
+.tab .cnt.ok{background:rgba(16,185,129,.12);color:#6ee7b7;border-color:rgba(16,185,129,.25);}
 .tab-add{padding:8px 11px;border-radius:10px 10px 0 0;cursor:pointer;font-size:18px;color:var(--text3);background:transparent;border:1px solid transparent;border-bottom:none;position:relative;top:1px;transition:all .18s;line-height:1;display:flex;align-items:center;}
 .tab-add:hover{color:var(--text2);}
 .tab-prog{position:absolute;bottom:0;left:0;height:2px;background:var(--green2);border-radius:1px;transition:width .5s cubic-bezier(.4,0,.2,1);opacity:.7;}
@@ -1759,31 +1762,30 @@ async function salvarNovaSenha(){
   </div>
   <div class="header-actions">
     <!-- Botão hamburguer só no mobile -->
-    <button class="hbtn hbtn-menu-toggle" onclick="toggleMenuMobile()" id="btnMenuMobile" title="Menu">☰</button>
+    <button class="hbtn hbtn-menu-toggle" onclick="toggleMenuMobile()" id="btnMenuMobile" title="Menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     <!-- Grupo de botões (vira dropdown no mobile) -->
     <div class="hbtn-group" id="hbtnGroup">
-      <button class="hbtn" onclick="abrirPreviewImportacao();fecharMenuMobile()" id="btnImportar" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;position:relative;" title="Importar dados do sistema antigo (localStorage)">📥 <span>Importar</span><span style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:8px;letter-spacing:.05em;">NOVO</span></button>
-      <button class="hbtn" onclick="toggleTema();fecharMenuMobile()" id="btnTema" title="Alternar modo claro/escuro">🌙 <span>Tema</span></button>
+      <button class="hbtn" onclick="abrirPreviewImportacao();fecharMenuMobile()" id="btnImportar" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;position:relative;" title="Importar dados do sistema antigo (localStorage)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span>Importar</span><span style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:8px;letter-spacing:.05em;">NOVO</span></button>
+      <button class="hbtn" onclick="toggleTema();fecharMenuMobile()" id="btnTema" title="Alternar modo claro/escuro"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg> <span>Tema</span></button>
       <div class="header-group">
-      <button class="hbtn" onclick="openPainelAnual();fecharMenuMobile()" id="btnAnual">📋 <span>Anuais</span></button>
-      <button class="hbtn" onclick="openCalendario();fecharMenuMobile()" id="btnCalendario">📅 <span>Calendário</span></button>
+      <button class="hbtn" onclick="openPainelAnual();fecharMenuMobile()" id="btnAnual"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg> <span>Anuais</span></button>
+      <button class="hbtn" onclick="openCalendario();fecharMenuMobile()" id="btnCalendario"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <span>Calendário</span></button>
       </div>
-      <button class="hbtn" onclick="openDashboard();fecharMenuMobile()">📊 <span>Painel</span></button>
-      <button class="hbtn" onclick="openFinanceiro();fecharMenuMobile()" id="btnFinanceiro" title="Relatório financeiro de honorários">💰 <span>Financeiro</span></button>
-      <button class="hbtn" onclick="abrirModalEquipe();fecharMenuMobile()" id="btnConvidar" title="Gerenciar equipe e convidar colaboradores">👥 <span>Equipe</span></button>
-      <button class="hbtn" onclick="abrirPainelEscritorios();fecharMenuMobile()" id="btnEscritorios" title="Painel de escritórios (super-admin)" style="display:none;">🏢 <span>Escritórios</span></button>
+      <button class="hbtn" onclick="openDashboard();fecharMenuMobile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg> <span>Painel</span></button>
+      <button class="hbtn" onclick="openFinanceiro();fecharMenuMobile()" id="btnFinanceiro" title="Relatório financeiro de honorários"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><circle cx="17" cy="14" r="1.5"/></svg> <span>Financeiro</span></button>
+      <button class="hbtn" onclick="abrirModalEquipe();fecharMenuMobile()" id="btnConvidar" title="Gerenciar equipe e convidar colaboradores"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span>Equipe</span></button>
+      <button class="hbtn" onclick="abrirPainelEscritorios();fecharMenuMobile()" id="btnEscritorios" title="Painel de escritórios (super-admin)" style="display:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M8 10h.01M16 10h.01M8 14h.01M16 14h.01"/></svg> <span>Escritórios</span></button>
       <div style="position:relative;display:inline-flex;">
-        <button class="hbtn" onclick="toggleMenuRelatorio(this)" id="btnRelatorio">📄 <span>Relatório</span> <span style="font-size:9px;opacity:.6;">▾</span></button>
+        <button class="hbtn" onclick="toggleMenuRelatorio(this)" id="btnRelatorio"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> <span>Relatório</span> <span style="font-size:9px;opacity:.6;">▾</span></button>
         <div id="menuRelatorio" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border2);border-radius:var(--radius-xs);box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:210px;overflow:hidden;z-index:200;">
-          <div onclick="gerarRelatorioMensal();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">📄 Relatório Mensal</div>
+          <div onclick="gerarRelatorioMensal();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Relatório Mensal</div>
           <div style="height:1px;background:var(--border);"></div>
-          <div onclick="gerarPDF();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">🖨 Relatório por Grupo</div>
+          <div onclick="gerarPDF();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Relatório por Grupo</div>
         </div>
       </div>
-      <button class="hbtn" onclick="exportarLocal();fecharMenuMobile()">💾 <span>Exportar</span></button>
-      <button class="hbtn" onclick="openRotinasModal();fecharMenuMobile()">⚙ <span>Rotinas</span></button>
+      <button class="hbtn" onclick="openRotinasModal();fecharMenuMobile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> <span>Rotinas</span></button>
     </div>
-    <button class="hbtn primary" id="btnAddEmpresa" onclick="openAddEmpresa()">+ <span>Empresa</span></button>
+    <button class="hbtn primary" id="btnAddEmpresa" onclick="openAddEmpresa()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span>Empresa</span></button>
   </div>
 </div>
 
@@ -1791,28 +1793,28 @@ async function salvarNovaSenha(){
 <div class="links-bar" id="linksBar">
   <span class="links-label">Acesso Rápido:</span>
   <a class="link-btn" href="https://dfe-portal.svrs.rs.gov.br/NFE/CCC" target="_blank">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Sintegra
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Sintegra
   </a>
   <a class="link-btn" href="https://cav.receita.fazenda.gov.br/" target="_blank">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> e-CAC
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> e-CAC
   </a>
   <a class="link-btn" href="https://servicos.receitafederal.gov.br/servico/certidoes/#/home" target="_blank">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg> CND Conjunta
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> CND Conjunta
   </a>
   <a class="link-btn" href="https://fgtsdigital.sistema.gov.br/portal/login" target="_blank">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> FGTS Digital
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> FGTS Digital
   </a>
   <a class="link-btn" href="https://login.esocial.gov.br/login.aspx" target="_blank">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> eSocial
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> eSocial
   </a>
   <a class="link-btn" href="https://sd.maisemprego.mte.gov.br/sdweb/empregadorweb/index.jsf" target="_blank">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg> Empregador Web
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Empregador Web
   </a>
   <a class="link-btn" href="https://www8.receita.fazenda.gov.br/SimplesNacional/Aplicacoes/ATSPO/pgmei.app/Identificacao" target="_blank" style="color:#ca8a04;border-color:rgba(202,138,4,.25);">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> PGMEI ✦
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> PGMEI ✦
   </a>
   <a class="link-btn" href="https://www.nfse.gov.br/EmissorNacional/Login" target="_blank" style="color:#ca8a04;border-color:rgba(202,138,4,.25);">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> NFS-e ✦
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> NFS-e ✦
   </a>
 </div>
 
