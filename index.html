@@ -1767,6 +1767,7 @@ async function salvarNovaSenha(){
     <div class="hbtn-group" id="hbtnGroup">
       <button class="hbtn" onclick="abrirPreviewImportacao();fecharMenuMobile()" id="btnImportar" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;position:relative;" title="Importar dados do sistema antigo (localStorage)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span>Importar</span><span style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:8px;letter-spacing:.05em;">NOVO</span></button>
       <button class="hbtn" onclick="toggleTema();fecharMenuMobile()" id="btnTema" title="Alternar modo claro/escuro"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg> <span>Tema</span></button>
+      <button class="hbtn" onclick="toggleVisaoAdmin();fecharMenuMobile()" id="btnVisaoAdmin" style="display:none;" title="Alternar entre ver só as suas rotinas ou todas as do escritório"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> <span id="lblVisaoAdmin">Meu</span></button>
       <div class="header-group">
       <button class="hbtn" onclick="openPainelAnual();fecharMenuMobile()" id="btnAnual"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/></svg> <span>Anuais</span></button>
       <button class="hbtn" onclick="openCalendario();fecharMenuMobile()" id="btnCalendario"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <span>Calendário</span></button>
@@ -2543,14 +2544,15 @@ async function loadStateFromSupabase(){
       { data: observacoesData },
       { data: obAnualStatusData },
       { data: obAnualSubsData },
-      { data: obAnualSubStatusData }
+      { data: obAnualSubStatusData },
+      { data: colabRotinasData }
     ] = await Promise.all([
       sb.from('grupos').select('id, nome, cor, ordem, ativo, inativado_em, inativado_por').order('ordem'),
       sb.from('empresas').select('*'),
       sb.from('empresa_grupos').select('empresa_id, grupo_id'),
       sb.from('rotinas').select('id, nome, cor, builtin, ordem, ativo, inativado_em, inativado_por').order('ordem'),
       sb.from('entregas').select('empresa_id, mes_ref, entregue_em'),
-      sb.from('subtarefas').select('id, empresa_id, texto, mes_ref, fixada'),
+      sb.from('subtarefas').select('id, empresa_id, texto, mes_ref, fixada, criada_por'),
       sb.from('subtarefa_status').select('subtarefa_id, mes_ref, concluida'),
       sb.from('fin_baixas').select('empresa_id, mes_ref, data_baixa'),
       sb.from('obrigacao_status').select('empresa_id, rotina_id, mes_ref, concluida, data_marcacao'),
@@ -2558,7 +2560,8 @@ async function loadStateFromSupabase(){
       sb.from('observacoes').select('empresa_id, mes_ref, texto'),
       sb.from('ob_anual_status').select('empresa_id, ob_id, ano, concluida, data_marcacao'),
       sb.from('ob_anual_subs').select('id, empresa_id, ob_id, ano, texto'),
-      sb.from('ob_anual_sub_status').select('sub_id, concluida')
+      sb.from('ob_anual_sub_status').select('sub_id, concluida'),
+      sb.from('colaborador_rotinas').select('user_id, empresa_id, rotina_id')
     ]);
     
     // Montar novo state no formato compatível com localStorage antigo
@@ -2704,7 +2707,8 @@ async function loadStateFromSupabase(){
         id: s.id,
         texto: s.texto,
         mesRef: s.mes_ref || undefined,
-        pinned: !!s.fixada
+        pinned: !!s.fixada,
+        criadaPor: s.criada_por || null
       });
     });
     
@@ -2772,6 +2776,13 @@ async function loadStateFromSupabase(){
       if(!st.concluida) return;
       const chave = _subAnualChaveById[st.sub_id];
       if(chave) novoState.obAnualSubStatus[chave] = true;
+    });
+
+    // 13) VÍNCULOS COLABORADOR ↔ EMPRESA ↔ ROTINA
+    // Guardo num Set com chave "userId|empresaId|rotinaId" para lookup O(1) no filtro
+    novoState.colabRotinasVinculos = new Set();
+    (colabRotinasData || []).forEach(v => {
+      novoState.colabRotinasVinculos.add(v.user_id + '|' + v.empresa_id + '|' + v.rotina_id);
     });
     
     const t1 = performance.now();
@@ -3136,8 +3147,13 @@ function getClienteGruposLabel(c){
   const gs=c.grupos&&c.grupos.length?c.grupos:[c.grupo||''];
   return gs.join(' · ');
 }
+// Retorna as rotinas visíveis para o usuário atual, respeitando o modo de visão.
+// - Colaborador: só vê rotinas que ele vinculou a si nessa empresa
+// - Admin no modo "Meu" (padrão): igual colaborador
+// - Admin no modo "Todos": vê todas as rotinas cadastradas na empresa
+// A determinação de "quais rotinas a empresa tem" continua nos flags do cadastro (c.folha, c.rotinas, etc)
 function getRotinasByCliente(c){
-  return state.rotinas.filter(r=>{
+  const todasDaEmpresa = state.rotinas.filter(r=>{
     if(r.id==='folha')return c.folha;
     if(r.id==='inss')return c.inss;
     if(r.id==='fgts')return c.fgts;
@@ -3146,6 +3162,39 @@ function getRotinasByCliente(c){
     // custom rotinas: check c.rotinas array
     return c.rotinas&&c.rotinas.includes(r.id);
   });
+  // Admin no modo "Todos" pula o filtro
+  if(isAdmin() && state.visaoAdminTodos) return todasDaEmpresa;
+  // Caso contrário, filtra pelas rotinas vinculadas ao usuário atual
+  const vinculos = state.colabRotinasVinculos || new Set();
+  const uid = usuarioAtual?.id;
+  if(!uid) return todasDaEmpresa;
+  return todasDaEmpresa.filter(r => vinculos.has(uid + '|' + c.id + '|' + r.id));
+}
+
+// Retorna TODAS as rotinas cadastradas da empresa (sem filtro por usuário).
+// Usada no modal de edição e no card de "escolher minhas rotinas".
+function getTodasRotinasDaEmpresa(c){
+  return state.rotinas.filter(r=>{
+    if(r.id==='folha')return c.folha;
+    if(r.id==='inss')return c.inss;
+    if(r.id==='fgts')return c.fgts;
+    if(r.id==='consig')return c.consignado;
+    if(r.id==='horas')return c.horas;
+    return c.rotinas&&c.rotinas.includes(r.id);
+  });
+}
+
+// Retorna true se o usuário atual tem alguma rotina vinculada nessa empresa
+function usuarioTemVinculoNaEmpresa(empresaId){
+  if(isAdmin() && state.visaoAdminTodos) return true;
+  const uid = usuarioAtual?.id;
+  if(!uid) return false;
+  const vinculos = state.colabRotinasVinculos || new Set();
+  // Basta 1 vínculo em qualquer rotina da empresa
+  for(const chave of vinculos){
+    if(chave.startsWith(uid + '|' + empresaId + '|')) return true;
+  }
+  return false;
 }
 
 
@@ -3370,18 +3419,164 @@ function isAdmin(){return usuarioAtual.role==='admin';}
 function podeExcluir(){return isAdmin();}
 function isSuperAdmin(){return !!usuarioAtual.super_admin;}
 
+// Alterna visão do admin entre "Meu" (só suas rotinas) e "Todos" (tudo do escritório)
+function toggleVisaoAdmin(){
+  if(!isAdmin())return;
+  state.visaoAdminTodos = !state.visaoAdminTodos;
+  const lbl = document.getElementById('lblVisaoAdmin');
+  if(lbl) lbl.textContent = state.visaoAdminTodos ? 'Todos' : 'Meu';
+  const btn = document.getElementById('btnVisaoAdmin');
+  if(btn) btn.style.background = state.visaoAdminTodos ? 'linear-gradient(135deg,#2563eb,#1e40af)' : '';
+  if(btn) btn.style.color = state.visaoAdminTodos ? '#fff' : '';
+  // Re-renderiza tudo com a nova visão
+  renderTabs();
+  renderCards();
+  updateProgress();
+  toast(state.visaoAdminTodos ? 'Visão: Todas as rotinas do escritório' : 'Visão: Só as suas rotinas','success');
+}
+
+// -------------------------------------------------------------------
+// MODAL "MINHAS ROTINAS" — cada colaborador escolhe as rotinas que
+// vai acompanhar naquela empresa. O vínculo é pessoal (por usuário).
+// -------------------------------------------------------------------
+function abrirModalMinhasRotinas(cid){
+  const c=findCliente(cid);
+  if(!c){toast('Empresa não encontrada','error');return;}
+  const todasDaEmp=getTodasRotinasDaEmpresa(c);
+  if(todasDaEmp.length===0){
+    toast('Esta empresa ainda não tem rotinas cadastradas. Peça ao administrador para configurar.','error');
+    return;
+  }
+  const uid=usuarioAtual.id;
+  const vinculos=state.colabRotinasVinculos||new Set();
+  document.getElementById('overlayMinhasRotinas')?.remove();
+  const linhas=todasDaEmp.map(r=>{
+    const marcado=vinculos.has(uid+'|'+cid+'|'+r.id);
+    return `<label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid ${marcado?r.color:'#e2e8f0'};border-radius:12px;cursor:pointer;transition:all .15s;background:${marcado?r.color+'12':'#fff'};">
+      <input type="checkbox" class="minharot-chk" value="${r.id}" ${marcado?'checked':''} style="width:18px;height:18px;cursor:pointer;accent-color:${r.color};">
+      <span style="width:10px;height:10px;border-radius:3px;background:${r.color};flex-shrink:0;"></span>
+      <span style="font-weight:800;color:#0f172a;font-size:13.5px;letter-spacing:.03em;">${r.name.toUpperCase()}</span>
+    </label>`;
+  }).join('');
+  const ov=document.createElement('div');
+  ov.id='overlayMinhasRotinas';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;max-width:440px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,.35);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="padding:20px 24px 16px;border-bottom:1px solid #e2e8f0;">
+      <div style="font-size:16px;font-weight:800;color:#0f172a;">Minhas rotinas em ${c.nome}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:2px;">Marque as obrigações que você acompanha para esta empresa</div>
+    </div>
+    <div style="padding:16px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">${linhas}</div>
+    <div style="padding:14px 24px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #e2e8f0;">
+      <button onclick="document.getElementById('overlayMinhasRotinas').remove()" style="padding:9px 16px;background:#f1f5f9;color:#0f172a;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">Cancelar</button>
+      <button onclick="salvarMinhasRotinas('${cid}')" style="padding:9px 20px;background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;">Salvar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+// Cria vínculo colaborador↔empresa↔rotina se ainda não existir.
+// Rodada em background quando o usuário marca uma rotina como concluída.
+async function garantirVinculoRotina(cid, rid){
+  const uid=usuarioAtual?.id;
+  if(!uid)return;
+  const chave=uid+'|'+cid+'|'+rid;
+  const vinculos=state.colabRotinasVinculos||new Set();
+  if(vinculos.has(chave))return;
+  try{
+    const {error}=await sb.from('colaborador_rotinas').insert({
+      user_id:uid,
+      empresa_id:cid,
+      rotina_id:rid,
+      escritorio_id:usuarioAtual.escritorio_id
+    });
+    if(error){
+      // Ignora silenciosamente se for erro de chave duplicada (concorrência)
+      if(!String(error.code||'').match(/23505/) && !/duplicate/i.test(error.message||'')){
+        console.warn('[VinculoRotina] Falha ao inserir:',error);
+      }
+    } else {
+      vinculos.add(chave);
+      state.colabRotinasVinculos = vinculos;
+    }
+  }catch(e){
+    console.warn('[VinculoRotina] Erro:',e);
+  }
+}
+
+async function salvarMinhasRotinas(cid){
+  const uid=usuarioAtual.id;
+  const marcadas=[...document.querySelectorAll('.minharot-chk:checked')].map(x=>x.value);
+  const vinculos=state.colabRotinasVinculos||new Set();
+  // Estado atual do usuário para essa empresa
+  const antesDoSave = new Set();
+  vinculos.forEach(chave=>{
+    if(chave.startsWith(uid+'|'+cid+'|')){
+      antesDoSave.add(chave.split('|')[2]);
+    }
+  });
+  const novasSet = new Set(marcadas);
+  // Calcula deltas
+  const paraInserir = marcadas.filter(r => !antesDoSave.has(r));
+  const paraRemover = [...antesDoSave].filter(r => !novasSet.has(r));
+  try{
+    if(paraInserir.length>0){
+      const rows=paraInserir.map(rid=>({
+        user_id:uid,
+        empresa_id:cid,
+        rotina_id:rid,
+        escritorio_id:usuarioAtual.escritorio_id
+      }));
+      const {error:eIns}=await sb.from('colaborador_rotinas').insert(rows);
+      if(eIns)throw eIns;
+    }
+    if(paraRemover.length>0){
+      const {error:eDel}=await sb.from('colaborador_rotinas')
+        .delete()
+        .eq('user_id',uid)
+        .eq('empresa_id',cid)
+        .in('rotina_id',paraRemover);
+      if(eDel)throw eDel;
+    }
+    // Atualiza o Set em memória
+    paraInserir.forEach(rid=>vinculos.add(uid+'|'+cid+'|'+rid));
+    paraRemover.forEach(rid=>vinculos.delete(uid+'|'+cid+'|'+rid));
+    state.colabRotinasVinculos = vinculos;
+    document.getElementById('overlayMinhasRotinas')?.remove();
+    toast('Suas rotinas foram atualizadas ✅','success');
+    // Re-renderiza para mostrar as rotinas escolhidas
+    renderTabs();
+    renderCards();
+    updateProgress();
+  }catch(e){
+    console.error('[MinhasRotinas] Falha:',e);
+    toast('Erro ao salvar: '+e.message,'error');
+  }
+}
+
 // -------------------------------------------------------------------
 // PAINEL 🏢 ESCRITÓRIOS (super-admin) — gestão de todos os escritórios
 // -------------------------------------------------------------------
 async function abrirPainelEscritorios(){
   if(!isSuperAdmin()){toast('Acesso restrito','error');return;}
   const [{data:escritorios,error:e1},{data:perfisAdmin,error:e2},{data:empresasCount,error:e3}]=await Promise.all([
-    sb.from('escritorios').select('id, nome, status, plano_vence_em, observacoes, suspenso_em, suspenso_motivo, criado_em').order('nome'),
+    sb.from('escritorios').select('id, nome, status, plano_vence_em, mensalidade, observacoes, suspenso_em, suspenso_motivo, criado_em').order('nome'),
     sb.from('profiles').select('id, nome, email, escritorio_id').eq('role','admin'),
     sb.from('empresas').select('escritorio_id, ativo')
   ]);
   if(e1||e2||e3){toast('Erro ao carregar: '+(e1?.message||e2?.message||e3?.message),'error');return;}
   const hoje=new Date().toISOString().slice(0,10);
+  const em7dias=new Date(Date.now()+7*864e5).toISOString().slice(0,10);
+  // Métricas do dashboard
+  let mrrPrevisto=0, pagantes=0, emPiloto=0, vencendo=0;
+  (escritorios||[]).forEach(esc=>{
+    const ativo=esc.status!=='suspenso' && esc.status!=='cancelado' && (!esc.plano_vence_em || esc.plano_vence_em >= hoje);
+    if(!ativo)return;
+    const mensal=Number(esc.mensalidade)||0;
+    if(mensal>0){pagantes++; mrrPrevisto+=mensal;} else {emPiloto++;}
+    if(esc.plano_vence_em && esc.plano_vence_em >= hoje && esc.plano_vence_em <= em7dias)vencendo++;
+  });
+  const fmtBRL=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
   // Conta empresas por escritório
   const contEmp={};
   (empresasCount||[]).forEach(e=>{
@@ -3417,6 +3612,7 @@ async function abrirPainelEscritorios(){
           <div style="font-size:11.5px;color:#64748b;margin-top:2px;display:flex;gap:14px;flex-wrap:wrap;">
             <span>🏢 ${emp.ativas} empresa${emp.ativas!==1?'s':''} ativa${emp.ativas!==1?'s':''}${emp.total!==emp.ativas?` (${emp.total} total)`:''}</span>
             <span style="color:${corVenc};font-weight:${vencido?'800':'600'};">📅 Vence: ${vencFmt}</span>
+            <span style="color:${Number(esc.mensalidade)>0?'#15803d':'#94a3b8'};font-weight:700;">💵 ${Number(esc.mensalidade)>0?fmtBRL(Number(esc.mensalidade))+'/mês':'Piloto'}</span>
           </div>
           ${esc.observacoes?`<div style="font-size:11px;color:#475569;margin-top:6px;padding:6px 10px;background:#f8fafc;border-radius:6px;border-left:3px solid #cbd5e1;">💬 ${esc.observacoes.replace(/</g,'&lt;')}</div>`:''}
           ${esc.suspenso_motivo?`<div style="font-size:11px;color:#b91c1c;margin-top:4px;">⚠️ ${esc.suspenso_motivo.replace(/</g,'&lt;')}</div>`:''}
@@ -3435,11 +3631,30 @@ async function abrirPainelEscritorios(){
   ov.id='overlayEscritorios';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:center;justify-content:center;padding:20px;';
   const totalAtivos=(escritorios||[]).filter(e=>e.status!=='suspenso'&&e.status!=='cancelado'&&(!e.plano_vence_em||e.plano_vence_em>=hoje)).length;
+  const dashboardMrr = `<div style="padding:16px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+    <div style="background:#fff;border:1px solid #dbeafe;border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10.5px;font-weight:800;color:#1d4ed8;letter-spacing:.05em;">MRR PREVISTO</div>
+      <div style="font-size:20px;font-weight:800;color:#0f172a;margin-top:3px;">${fmtBRL(mrrPrevisto)}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10.5px;font-weight:800;color:#15803d;letter-spacing:.05em;">PAGANTES</div>
+      <div style="font-size:20px;font-weight:800;color:#0f172a;margin-top:3px;">${pagantes}</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e0e7ff;border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10.5px;font-weight:800;color:#4338ca;letter-spacing:.05em;">EM PILOTO</div>
+      <div style="font-size:20px;font-weight:800;color:#0f172a;margin-top:3px;">${emPiloto}</div>
+    </div>
+    <div style="background:#fff;border:1px solid ${vencendo>0?'#fecaca':'#e2e8f0'};border-radius:10px;padding:12px 14px;">
+      <div style="font-size:10.5px;font-weight:800;color:${vencendo>0?'#b91c1c':'#64748b'};letter-spacing:.05em;">VENCENDO EM 7 DIAS</div>
+      <div style="font-size:20px;font-weight:800;color:#0f172a;margin-top:3px;">${vencendo}</div>
+    </div>
+  </div>`;
   ov.innerHTML=`<div style="background:#fff;border-radius:14px;max-width:720px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,.3);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
     <div style="background:linear-gradient(135deg,#0f172a,#1e40af);color:#fff;padding:20px 24px;">
       <div style="font-size:18px;font-weight:800;">🏢 Escritórios do BSHub</div>
       <div style="font-size:12px;opacity:.9;margin-top:2px;">${(escritorios||[]).length} total · ${totalAtivos} ativos · ${(escritorios||[]).length-totalAtivos} inativos</div>
     </div>
+    ${dashboardMrr}
     <div style="overflow-y:auto;flex:1;">${linhas||'<div style="padding:32px;text-align:center;color:#64748b;">Nenhum escritório ainda</div>'}</div>
     <div style="padding:14px 24px;display:flex;justify-content:space-between;gap:8px;border-top:1px solid #e2e8f0;background:#f8fafc;">
       <button onclick="document.getElementById('overlayEscritorios').remove()" style="padding:9px 16px;background:#f1f5f9;color:#0f172a;border:none;border-radius:7px;font-weight:700;font-size:13px;cursor:pointer;">Fechar</button>
@@ -3469,10 +3684,11 @@ async function alterarStatusEscritorio(escId,novoStatus){
 }
 
 async function editarEscritorio(escId){
-  const {data:esc,error}=await sb.from('escritorios').select('nome, plano_vence_em, observacoes').eq('id',escId).single();
+  const {data:esc,error}=await sb.from('escritorios').select('nome, plano_vence_em, mensalidade, observacoes').eq('id',escId).single();
   if(error){toast('Erro: '+error.message,'error');return;}
   document.getElementById('overlayEditEsc')?.remove();
   const venc=esc.plano_vence_em||'';
+  const mensal=Number(esc.mensalidade)||0;
   const ov=document.createElement('div');
   ov.id='overlayEditEsc';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -3482,6 +3698,10 @@ async function editarEscritorio(escId){
       <div style="font-size:11.5px;color:#64748b;">${esc.nome}</div>
     </div>
     <div style="padding:16px 22px;display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">MENSALIDADE (R$/mês — 0 = piloto)</label>
+        <input id="editMensal" type="number" step="0.01" min="0" value="${mensal}" placeholder="79.00" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;">
+      </div>
       <div>
         <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">DATA DE VENCIMENTO DO PLANO</label>
         <input id="editVence" type="date" value="${venc}" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;">
@@ -3502,8 +3722,9 @@ async function editarEscritorio(escId){
 async function salvarEdicaoEscritorio(escId){
   const vence=document.getElementById('editVence').value||null;
   const obs=document.getElementById('editObs').value.trim()||null;
+  const mensal=parseFloat(document.getElementById('editMensal').value)||0;
   try{
-    const {error}=await sb.from('escritorios').update({plano_vence_em:vence,observacoes:obs}).eq('id',escId);
+    const {error}=await sb.from('escritorios').update({plano_vence_em:vence,observacoes:obs,mensalidade:mensal}).eq('id',escId);
     if(error)throw error;
     document.getElementById('overlayEditEsc')?.remove();
     toast('Salvo ✅','success');
@@ -3528,6 +3749,10 @@ function abrirCadastroEscritorio(){
       <input id="novoEscAdminNome" type="text" placeholder="Nome do administrador" style="width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
       <input id="novoEscAdminEmail" type="email" placeholder="E-mail do administrador" style="width:100%;padding:11px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box;">
       <div>
+        <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">MENSALIDADE (R$/mês — 0 = piloto grátis)</label>
+        <input id="novoEscMensal" type="number" step="0.01" min="0" value="0" placeholder="0.00" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;">
+      </div>
+      <div>
         <label style="font-size:11px;font-weight:800;color:#475569;letter-spacing:.05em;">VENCIMENTO DO PLANO (padrão: 60 dias)</label>
         <input id="novoEscVence" type="date" value="${vencPadrao}" style="width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;margin-top:4px;box-sizing:border-box;">
       </div>
@@ -3550,6 +3775,7 @@ async function cadastrarNovoEscritorio(){
   const admEmail=document.getElementById('novoEscAdminEmail').value.trim().toLowerCase();
   const vence=document.getElementById('novoEscVence').value||null;
   const obs=document.getElementById('novoEscObs').value.trim()||null;
+  const mensal=parseFloat(document.getElementById('novoEscMensal').value)||0;
   if(!nome){toast('Informe o nome do escritório','error');return;}
   if(!admNome){toast('Informe o nome do administrador','error');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(admEmail)){toast('E-mail inválido','error');return;}
@@ -3561,7 +3787,7 @@ async function cadastrarNovoEscritorio(){
     const resp=await fetch(SUPABASE_URL+'/functions/v1/convidar-admin-escritorio',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':SUPABASE_KEY},
-      body:JSON.stringify({escritorio_nome:nome,admin_nome:admNome,admin_email:admEmail,plano_vence_em:vence,observacoes:obs})
+      body:JSON.stringify({escritorio_nome:nome,admin_nome:admNome,admin_email:admEmail,plano_vence_em:vence,observacoes:obs,mensalidade:mensal})
     });
     const out=await resp.json().catch(()=>({}));
     if(!resp.ok||out.error)throw new Error(out.error||('HTTP '+resp.status));
@@ -3929,6 +4155,17 @@ function renderCards(){
     clients=clients.filter(c=>!c.ativo);
   }else{
     clients=clients.filter(c=>c.ativo);
+    // Filtro por VÍNCULO: usuário só vê empresas onde tem pelo menos 1 rotina vinculada
+    // Admin no modo "Todos" enxerga todas.
+    // Empresas sem nenhuma rotina definida no cadastro também aparecem (para o usuário poder configurá-las)
+    clients=clients.filter(c=>{
+      if(isAdmin() && state.visaoAdminTodos) return true;
+      // Se a empresa não tem NENHUMA rotina cadastrada, mostra (assim admin pode configurar)
+      const todasDaEmp = getTodasRotinasDaEmpresa(c);
+      if(todasDaEmp.length === 0) return isAdmin();
+      // Caso contrário, exige pelo menos 1 vínculo do usuário
+      return usuarioTemVinculoNaEmpresa(c.id);
+    });
     // Fix 3: só filtra competência se compIni estiver definido
     const mk=mesKey();
     clients=clients.filter(c=>{
@@ -4078,7 +4315,10 @@ function buildCard(c){
     <div class="obrigacoes">
       ${obRows}
       ${btnMarcarTodas}
-    </div>`:''}
+    </div>`: (getTodasRotinasDaEmpresa(c).length > 0 && !(isAdmin() && state.visaoAdminTodos) ? `<div class="card-divider"></div>
+    <div style="padding:10px 12px;text-align:center;">
+      <button onclick="abrirModalMinhasRotinas('${c.id}')" style="width:100%;padding:8px 12px;background:rgba(37,99,235,.12);color:var(--accent);border:1px dashed rgba(37,99,235,.3);border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Escolher minhas rotinas</button>
+    </div>` : '')}
     ${miniProg}
     ${finInfo}
     <div id="obsWrap_${c.id}" style="display:${getObsMes(c.id)?'block':'none'}" class="card-obs">
@@ -4145,6 +4385,8 @@ function toggleOb(cid,rid,el){
     el.className='ob-check done';el.textContent='✓';
     el.nextElementSibling.textContent=d;
     syncObrigacaoSupabase(cid, rid, true, d);
+    // 👤 Cria vínculo silencioso se ainda não existe (auto-assume)
+    garantirVinculoRotina(cid, rid);
   }
   saveState();
   atualizarBtnEntregar(cid);
@@ -7001,11 +7243,20 @@ document.addEventListener('keydown',function(e){
 function getSubtarefas(cid){
   const todas=state.subtarefas?.[cid]||[];
   const mk=mesKey();
-  // Fixadas aparecem sempre
-  // Não fixadas só aparecem no mês em que foram criadas (campo mesRef)
+  const uid=usuarioAtual?.id;
+  const modoTodos = isAdmin() && state.visaoAdminTodos;
+  // Fixadas aparecem sempre; não fixadas só no mês criado
+  // Filtro por criadaPor: cada usuário vê só as suas (subs antigas sem criadaPor: só admin vê no modo Todos)
   return todas.filter(s=>{
+    // Filtro de visibilidade por criador
+    if(!modoTodos){
+      if(!uid)return false;
+      // subs antigas sem criadaPor: exibe só para o admin (evita perder dados nas migrações)
+      if(!s.criadaPor && !isAdmin())return false;
+      if(s.criadaPor && s.criadaPor !== uid)return false;
+    }
+    // Filtro de mês (regra original)
     if(s.pinned)return true;
-    // Se não tem mesRef (antigas), mostra sempre para não perder dados
     if(!s.mesRef)return true;
     return s.mesRef===mk;
   });
@@ -7151,7 +7402,7 @@ function adicionarSub(cid){
   if(!state.subtarefas[cid])state.subtarefas[cid]=[];
   const sid='s'+Date.now();
   // mesRef registra o mês de criação — subtarefas não fixadas só aparecem neste mês
-  const novaSub={id:sid,texto,pinned:false,mesRef:mesKey()};
+  const novaSub={id:sid,texto,pinned:false,mesRef:mesKey(),criadaPor:usuarioAtual.id};
   state.subtarefas[cid].push(novaSub);
   saveState();
   // 🌐 Sincronizar com Supabase (background)
@@ -8246,6 +8497,11 @@ function iniciarSistema(){
     document.getElementById('btnFinanceiro')?.remove();
     document.getElementById('btnAddEmpresa')?.remove();
     document.getElementById('btnConvidar')?.remove();
+  }
+  // 👁️ Toggle Meu/Todos — só admin vê
+  if(isAdmin()){
+    const btnV=document.getElementById('btnVisaoAdmin');
+    if(btnV)btnV.style.display='';
   }
   // 🏢 Painel de escritórios — só super-admin (o Brauler) enxerga
   if(usuarioAtual.super_admin){
