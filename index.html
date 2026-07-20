@@ -2545,7 +2545,7 @@ async function loadStateFromSupabase(){
       { data: perfisTodos },
       { data: colabRotinasData }
     ] = await Promise.all([
-      sb.from('grupos').select('id, nome, cor, ordem, ativo, inativado_em, inativado_por').order('ordem'),
+      sb.from('grupos').select('id, nome, cor, ordem, ativo, inativado_em, inativado_por, dono_id').order('ordem'),
       sb.from('empresas').select('*'),
       sb.from('empresa_grupos').select('empresa_id, grupo_id'),
       sb.from('rotinas').select('id, nome, cor, builtin, ordem, ativo, inativado_em, inativado_por').order('ordem'),
@@ -2559,7 +2559,7 @@ async function loadStateFromSupabase(){
       sb.from('ob_anual_status').select('empresa_id, ob_id, ano, concluida, data_marcacao'),
       sb.from('ob_anual_subs').select('id, empresa_id, ob_id, ano, texto'),
       sb.from('ob_anual_sub_status').select('sub_id, concluida'),
-      sb.from('profiles').select('id, role'),
+      sb.from('profiles').select('id, role, nome'),
       sb.from('colaborador_rotinas').select('user_id, empresa_id, rotina_id')
     ]);
     
@@ -2606,6 +2606,9 @@ async function loadStateFromSupabase(){
     // Mapa GLOBAL nome → id (TODOS os grupos, para syncEmpresaSupabase reativação etc.)
     mapaGruposIds = {};
     (grupos || []).forEach(g => { mapaGruposIds[g.nome] = g.id; });
+    // Mapa nome do grupo → dono_id (para atribuir rotinas ao colaborador dono da aba)
+    novoState.grupoDono = {};
+    (grupos || []).forEach(g => { if(g.dono_id) novoState.grupoDono[g.nome] = g.dono_id; });
     
     // 2) EMPRESAS agrupadas por nome de grupo (via empresa_grupos)
     // Cria mapa: empresa_id → array de nomes de grupo ATIVOS
@@ -2788,6 +2791,9 @@ async function loadStateFromSupabase(){
     (colabRotinasData || []).forEach(v => {
       novoState.colabRotinasVinculos.add(v.user_id + '|' + v.empresa_id + '|' + v.rotina_id);
     });
+
+    // 14) LISTA DE COLABORADORES (para mostrar nome do dono da aba no modal)
+    novoState.colaboradores = (perfisTodos || []).map(p => ({ id: p.id, role: p.role, nome: p.nome }));
     
     const t1 = performance.now();
     console.log(`[Supabase] State carregado em ${Math.round(t1-t0)}ms:`, {
@@ -3161,15 +3167,17 @@ function getRotinasByCliente(c){
     if(r.id==='horas')return c.horas;
     return c.rotinas&&c.rotinas.includes(r.id);
   });
-  // Filtra pelas rotinas que o USUÁRIO ATUAL vinculou como suas nessa empresa
-  const uid=usuarioAtual?.id;
-  if(!uid)return todasDaEmpresa;
+  // Determina o "dono" da visualização atual:
+  //   - Se a aba corrente tem dono (colaborador): dono = aquele colaborador
+  //   - Se a aba não tem dono (grupo por assunto): dono = admin (usuário logado, que só admin acessa)
+  const donoDaAba = state.grupoDono?.[currentGrupo] || usuarioAtual?.id;
+  if(!donoDaAba)return todasDaEmpresa;
   const vinculos=state.colabRotinasVinculos||new Set();
-  return todasDaEmpresa.filter(r=>vinculos.has(uid+'|'+c.id+'|'+r.id));
+  return todasDaEmpresa.filter(r=>vinculos.has(donoDaAba+'|'+c.id+'|'+r.id));
 }
 
-// Retorna TODAS as rotinas cadastradas na empresa (sem filtro por vínculo pessoal).
-// Útil no modal de editar empresa para o admin ver o que está definido.
+// Retorna TODAS as rotinas cadastradas na empresa (sem filtro por vínculo).
+// Usada no modal de editar empresa (admin vê o que está cadastrado).
 function getTodasRotinasDaEmpresa(c){
   return state.rotinas.filter(r=>{
     if(r.id==='folha')return c.folha;
@@ -4655,18 +4663,24 @@ function getGruposChecked(){
 
 function buildRotinasCheck(c){
   const wrap=document.getElementById('mRotinasCheck');
-  const uid=usuarioAtual?.id;
+  // Dono da visualização atual (colaborador dono da aba OU admin logado se aba sem dono)
+  const donoDaAba=state.grupoDono?.[currentGrupo]||usuarioAtual?.id;
   const vinculos=state.colabRotinasVinculos||new Set();
-  // Legenda topo do bloco
+  // Nome do dono, para a legenda
   const admin=isAdmin();
+  let nomeDono='você';
+  if(admin && state.grupoDono?.[currentGrupo]){
+    // Aba tem dono: procura nome do colaborador
+    const colab=(state.colaboradores||[]).find(u=>u.id===donoDaAba);
+    nomeDono = colab?.nome || 'colaborador';
+  }
   const legenda = admin
-    ? '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(37,99,235,.08);border-left:3px solid var(--accent);border-radius:4px;">Marque as rotinas que <strong>VOCÊ vai fazer</strong> nesta empresa. Cada colaborador escolhe as dele individualmente.</div>'
-    : '<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(37,99,235,.08);border-left:3px solid var(--accent);border-radius:4px;">Marque as rotinas que <strong>você vai acompanhar</strong> nesta empresa.</div>';
+    ? `<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(37,99,235,.08);border-left:3px solid var(--accent);border-radius:4px;">Marque as rotinas de <strong>${nomeDono}</strong> nesta empresa. Você está na aba "${currentGrupo}".</div>`
+    : `<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(37,99,235,.08);border-left:3px solid var(--accent);border-radius:4px;">Marque as rotinas que <strong>você vai acompanhar</strong> nesta empresa.</div>`;
   wrap.innerHTML=legenda+state.rotinas.map(r=>{
     let checked=false;
-    if(c && uid){
-      // Rotina marcada = usuário tem vínculo pessoal com ela nessa empresa
-      checked = vinculos.has(uid+'|'+c.id+'|'+r.id);
+    if(c && donoDaAba){
+      checked = vinculos.has(donoDaAba+'|'+c.id+'|'+r.id);
     }else if(!c){
       // Empresa nova (só admin cria): sugere as principais como marcadas
       checked=['folha','inss','fgts'].includes(r.id);
@@ -4772,17 +4786,20 @@ async function saveEmpresa(){
 }
 
 // -------------------------------------------------------------------
-// Sincroniza os vínculos pessoais colaborador↔empresa↔rotina de acordo
-// com o que foi marcado no modal. Calcula deltas (insere novos, remove
-// os desmarcados) e atualiza o Set em memória.
+// Sincroniza os vínculos empresa↔rotina para o DONO DA ABA ATUAL.
+// - Aba de colaborador: vincula rotinas ao colaborador
+// - Aba sem dono (grupo por assunto): vincula ao admin (usuário logado)
+// Só admin pode atribuir rotinas ao dono da aba (colaborador tem RLS
+// que só permite alterar seus próprios vínculos).
 // -------------------------------------------------------------------
 async function sincronizarVinculosRotinasUsuario(empresaId, rotinaIdsMarcadas){
-  const uid=usuarioAtual?.id;
-  if(!uid)return;
+  // Alvo: dono da aba corrente, ou usuário logado se aba sem dono
+  const alvoUid = state.grupoDono?.[currentGrupo] || usuarioAtual?.id;
+  if(!alvoUid)return;
   const vinculos=state.colabRotinasVinculos||new Set();
   const antesSet=new Set();
   vinculos.forEach(ch=>{
-    if(ch.startsWith(uid+'|'+empresaId+'|')) antesSet.add(ch.split('|')[2]);
+    if(ch.startsWith(alvoUid+'|'+empresaId+'|')) antesSet.add(ch.split('|')[2]);
   });
   const novasSet=new Set(rotinaIdsMarcadas);
   const paraInserir=rotinaIdsMarcadas.filter(r=>!antesSet.has(r));
@@ -4790,7 +4807,7 @@ async function sincronizarVinculosRotinasUsuario(empresaId, rotinaIdsMarcadas){
   try{
     if(paraInserir.length>0){
       const rows=paraInserir.map(rid=>({
-        user_id:uid,
+        user_id:alvoUid,
         empresa_id:empresaId,
         rotina_id:rid,
         escritorio_id:usuarioAtual.escritorio_id
@@ -4801,13 +4818,13 @@ async function sincronizarVinculosRotinasUsuario(empresaId, rotinaIdsMarcadas){
     if(paraRemover.length>0){
       const {error:eDel}=await sb.from('colaborador_rotinas')
         .delete()
-        .eq('user_id',uid)
+        .eq('user_id',alvoUid)
         .eq('empresa_id',empresaId)
         .in('rotina_id',paraRemover);
       if(eDel)throw eDel;
     }
-    paraInserir.forEach(rid=>vinculos.add(uid+'|'+empresaId+'|'+rid));
-    paraRemover.forEach(rid=>vinculos.delete(uid+'|'+empresaId+'|'+rid));
+    paraInserir.forEach(rid=>vinculos.add(alvoUid+'|'+empresaId+'|'+rid));
+    paraRemover.forEach(rid=>vinculos.delete(alvoUid+'|'+empresaId+'|'+rid));
     state.colabRotinasVinculos=vinculos;
   }catch(e){
     console.error('[VinculosRotinas] Falha:',e);
