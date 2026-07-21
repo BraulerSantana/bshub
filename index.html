@@ -1749,28 +1749,29 @@ async function salvarNovaSenha(){
   </div>
   <div class="header-actions">
     <!-- Botão hamburguer só no mobile -->
-    <button class="hbtn hbtn-menu-toggle" onclick="toggleMenuMobile()" id="btnMenuMobile" title="Menu">☰</button>
+    <button class="hbtn hbtn-menu-toggle" onclick="toggleMenuMobile()" id="btnMenuMobile" title="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
     <!-- Grupo de botões (vira dropdown no mobile) -->
     <div class="hbtn-group" id="hbtnGroup">
-      <button class="hbtn" onclick="toggleTema();fecharMenuMobile()" id="btnTema" title="Alternar modo claro/escuro">🌙 <span>Tema</span></button>
+      <button class="hbtn" onclick="toggleTema();fecharMenuMobile()" id="btnTema" title="Alternar modo claro/escuro"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg> <span>Tema</span></button>
       <div class="header-group">
-      <button class="hbtn" onclick="openPainelAnual();fecharMenuMobile()" id="btnAnual">📋 <span>Anuais</span></button>
-      <button class="hbtn" onclick="openCalendario();fecharMenuMobile()" id="btnCalendario">📅 <span>Calendário</span></button>
+      <button class="hbtn" onclick="openPainelAnual();fecharMenuMobile()" id="btnAnual"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4M12 16h4M8 11h.01M8 16h.01"/></svg> <span>Anuais</span></button>
+      <button class="hbtn" onclick="openCalendario();fecharMenuMobile()" id="btnCalendario"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg> <span>Calendário</span></button>
       </div>
-      <button class="hbtn" onclick="openDashboard();fecharMenuMobile()">📊 <span>Painel</span></button>
-      <button class="hbtn" onclick="openFinanceiro();fecharMenuMobile()" id="btnFinanceiro" title="Relatório financeiro de honorários">💰 <span>Financeiro</span></button>
-      <button class="hbtn" onclick="abrirModalEquipe();fecharMenuMobile()" id="btnConvidar" title="Gerenciar equipe e convidar colaboradores">👥 <span>Equipe</span></button>
-      <button class="hbtn" onclick="abrirPainelEscritorios();fecharMenuMobile()" id="btnEscritorios" title="Painel de escritórios (super-admin)" style="display:none;">🏢 <span>Escritórios</span></button>
+      <button class="hbtn" onclick="openDashboard();fecharMenuMobile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg> <span>Painel</span></button>
+      <button class="hbtn" onclick="openFinanceiro();fecharMenuMobile()" id="btnFinanceiro" title="Relatório financeiro de honorários"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg> <span>Financeiro</span></button>
+      <button class="hbtn" onclick="abrirModalEquipe();fecharMenuMobile()" id="btnConvidar" title="Gerenciar equipe e convidar colaboradores"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span>Equipe</span></button>
+      <button class="hbtn" onclick="abrirPainelEscritorios();fecharMenuMobile()" id="btnEscritorios" title="Painel de escritórios (super-admin)" style="display:none;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2M10 6h4M10 10h4M10 14h4M10 18h4"/></svg> <span>Escritórios</span></button>
       <div style="position:relative;display:inline-flex;">
-        <button class="hbtn" onclick="toggleMenuRelatorio(this)" id="btnRelatorio">📄 <span>Relatório</span> <span style="font-size:9px;opacity:.6;">▾</span></button>
+        <button class="hbtn" onclick="toggleMenuRelatorio(this)" id="btnRelatorio"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8"/></svg> <span>Relatório</span> <span style="font-size:9px;opacity:.6;">▾</span></button>
         <div id="menuRelatorio" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border2);border-radius:var(--radius-xs);box-shadow:0 8px 24px rgba(0,0,0,.4);min-width:210px;overflow:hidden;z-index:200;">
-          <div onclick="gerarRelatorioMensal();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">📄 Relatório Mensal</div>
+          <div onclick="gerarRelatorioMensal();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8"/></svg> Relatório Mensal</div>
           <div style="height:1px;background:var(--border);"></div>
-          <div onclick="gerarPDF();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">🖨 Relatório por Grupo</div>
+          <div onclick="gerarPDF();fecharMenuRelatorio()" style="padding:10px 14px;cursor:pointer;font-size:12px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;transition:background .15s;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3h12v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg> Relatório por Grupo</div>
         </div>
       </div>
-      <button class="hbtn" onclick="exportarLocal();fecharMenuMobile()">💾 <span>Exportar</span></button>
-      <button class="hbtn" onclick="openRotinasModal();fecharMenuMobile()">⚙ <span>Rotinas</span></button>
+      <button class="hbtn" onclick="exportarLocal();fecharMenuMobile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span>Exportar</span></button>
+      <button class="hbtn" onclick="openRotinasModal();fecharMenuMobile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> <span>Rotinas</span></button>
+      <button class="hbtn" onclick="window.open('/ajuda.html','_blank');fecharMenuMobile()" title="Central de Ajuda do BSHub"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> <span>Ajuda</span></button>
     </div>
     <button class="hbtn primary" id="btnAddEmpresa" onclick="openAddEmpresa()">+ <span>Empresa</span></button>
   </div>
@@ -1818,9 +1819,9 @@ async function salvarNovaSenha(){
   </div>
   <div class="filter-btns">
     <button class="fbtn f-all active" id="fb-all" onclick="setFilter('all')">TODOS</button>
-    <button class="fbtn f-pend" id="fb-pend" onclick="setFilter('pendente')">⚠ PENDENTES</button>
-    <button class="fbtn f-done" id="fb-done" onclick="setFilter('concluido')">✓ ENTREGUES</button>
-    <button class="fbtn f-sub" id="fb-sub" onclick="setFilter('subtarefa')">📝 SUBTAREFAS</button>
+    <button class="fbtn f-pend" id="fb-pend" onclick="setFilter('pendente')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1.5px;margin-right:2px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4M12 17h.01"/></svg>PENDENTES</button>
+    <button class="fbtn f-done" id="fb-done" onclick="setFilter('concluido')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1.5px;margin-right:2px;"><polyline points="20 6 9 17 4 12"/></svg>ENTREGUES</button>
+    <button class="fbtn f-sub" id="fb-sub" onclick="setFilter('subtarefa')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1.5px;margin-right:2px;"><path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/></svg>SUBTAREFAS</button>
     <button class="fbtn f-inativo" id="fb-inativo" onclick="setFilter('inativo')">INATIVOS</button>
   </div>
   <select class="sort-sel" id="sortSel" onchange="renderCards()" title="Ordenar por">
@@ -5177,6 +5178,9 @@ function openBackupModal(){
   document.getElementById('overlayBackup').classList.add('open');
 }
 
+const ICON_TEMA_LUA='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
+const ICON_TEMA_SOL='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+
 // ===== BACKUP LOCAL =====
 function exportarBackup(){
   const data = JSON.stringify(state, null, 2);
@@ -5241,11 +5245,11 @@ document.addEventListener('click',function(e){
 function toggleTema(){
   const light=document.body.classList.toggle('light');
   localStorage.setItem('bshub_tema', light?'light':'dark');
-  document.getElementById('btnTema').textContent=light?'🌑':'🌙';
+  document.getElementById('btnTema').innerHTML=(light?ICON_TEMA_SOL:ICON_TEMA_LUA)+' <span>Tema</span>';
 }
 if(localStorage.getItem('bshub_tema')==='light'){
   document.body.classList.add('light');
-  document.getElementById('btnTema').textContent='🌑';
+  document.getElementById('btnTema').innerHTML=ICON_TEMA_SOL+' <span>Tema</span>';
 }
 
 
