@@ -4057,9 +4057,9 @@ function buildCard(c){
     </div>`;
   }).join('');
 
-  const customBadges=state.rotinas
-    .filter(r=>!['folha','inss','fgts','consig','horas'].includes(r.id)&&c.rotinas&&c.rotinas.includes(r.id))
-    .map(r=>`<span class="badge" style="background:${r.color}18;color:${r.color};border:1px solid ${r.color}35">${r.name.slice(0,7).toUpperCase()}</span>`).join('');
+  // Badges de rotinas custom removidas (sua decisão) — só MEI aparece como badge fixa,
+  // e os grupos como badges próprias. Simples/DASN/etc. viram só rotinas de trabalho no card.
+  const customBadges='';
 
   const pct=totalOb?Math.round(doneOb/totalOb*100):0;
   const miniProg=totalOb?`<div style="height:2px;background:var(--border);border-radius:1px;margin:0 10px 6px;overflow:hidden;">
