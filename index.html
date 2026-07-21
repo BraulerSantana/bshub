@@ -1238,16 +1238,6 @@ body.light .fin-baixa.done{background:#16a34a;border-color:#16a34a;color:#fff;}
 </head>
 <body>
 <!-- ============ TELA DE LOGIN + AUTH ============ -->
-<style id="importEstilos">
-  #btnImportar { transition: transform .15s ease, box-shadow .15s ease; }
-  #btnImportar:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(245,158,11,.4) !important; }
-  #modalImportPreview.ativo, #modalImportProgresso.ativo { display: flex !important; }
-  .imp-linha { display:flex; align-items:center; gap:8px; padding:4px 0; }
-  .imp-check { color:#16a34a; font-weight:900; }
-  .imp-spin { color:#f59e0b; }
-  .imp-erro { color:#dc2626; font-weight:700; }
-  .imp-contador { color:#64748b; font-size:11.5px; margin-left:auto; }
-</style>
 
 <style id="authEstilos">
   @keyframes authSpin { to { transform: rotate(360deg); } }
@@ -1762,7 +1752,6 @@ async function salvarNovaSenha(){
     <button class="hbtn hbtn-menu-toggle" onclick="toggleMenuMobile()" id="btnMenuMobile" title="Menu">☰</button>
     <!-- Grupo de botões (vira dropdown no mobile) -->
     <div class="hbtn-group" id="hbtnGroup">
-      <button class="hbtn" onclick="abrirPreviewImportacao();fecharMenuMobile()" id="btnImportar" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;position:relative;" title="Importar dados do sistema antigo (localStorage)">📥 <span>Importar</span><span style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:8px;letter-spacing:.05em;">NOVO</span></button>
       <button class="hbtn" onclick="toggleTema();fecharMenuMobile()" id="btnTema" title="Alternar modo claro/escuro">🌙 <span>Tema</span></button>
       <div class="header-group">
       <button class="hbtn" onclick="openPainelAnual();fecharMenuMobile()" id="btnAnual">📋 <span>Anuais</span></button>
@@ -2049,7 +2038,7 @@ async function salvarNovaSenha(){
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">📊 Exportar CSV</div>
       <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Exporta a lista de empresas para o Excel.</div>
-      <button class="btn-save" style="width:100%;padding:9px;" onclick="exportarCSV()">📊 Baixar CSV</button>
+      <button class="btn-save" style="width:100%;padding:9px;" onclick="openExportModal()">📊 Baixar CSV</button>
     </div>
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">⬆ Restaurar backup</div>
@@ -2573,7 +2562,6 @@ async function loadStateFromSupabase(){
       entregues: {},
       subStatus: {},
       subtarefas: {},
-      subImportar: {},
       obsMes: {},
       vencimentos: {},
       obrigacoesAnuais: {},
@@ -3178,19 +3166,6 @@ function getRotinasByCliente(c){
   // Se ainda não tem nenhum vínculo pessoal, cai no comportamento antigo:
   // mostra as rotinas cadastradas na empresa (para admin ter algo em modo padrão).
   return rotinasDaEmpresa;
-}
-
-// Retorna TODAS as rotinas cadastradas na empresa (sem filtro por vínculo).
-// Usada no modal de editar empresa (admin vê o que está cadastrado).
-function getTodasRotinasDaEmpresa(c){
-  return state.rotinas.filter(r=>{
-    if(r.id==='folha')return c.folha;
-    if(r.id==='inss')return c.inss;
-    if(r.id==='fgts')return c.fgts;
-    if(r.id==='consig')return c.consignado;
-    if(r.id==='horas')return c.horas;
-    return c.rotinas&&c.rotinas.includes(r.id);
-  });
 }
 
 
@@ -5193,356 +5168,13 @@ function toast(msg,type='success'){
 
 // ============ 04-backup.js ============
 // ============================================================
-// BSHub — BACKUP — Google Drive, OneDrive, local (export/import)
+// BSHub — BACKUP — local (export/import .json / CSV)
 // ============================================================
 // ===== BACKUP & GOOGLE DRIVE =====
 
-const GD_CLIENT_ID_KEY = 'bshub_gd_client_id';
-const GD_FILE_NAME = 'BSHub_backup.json';
-const GD_SCOPES = 'https://www.googleapis.com/auth/drive.file';
-
-let gdAccessToken = null;
-let gdFileId = null; // ID do arquivo no Drive
-let tokenClient = null;
-let gapiReady = false;
-let gisReady = false;
-
-function getSavedClientId(){
-  return localStorage.getItem(GD_CLIENT_ID_KEY)||'';
-}
 
 function openBackupModal(){
   document.getElementById('overlayBackup').classList.add('open');
-}
-
-// ===== BACKUP TABS =====
-function bkpSetTab(tab){
-  const tabs=['onedrive','google','local'];
-  const colors={onedrive:'#0078d4',google:'var(--accent)',local:'var(--accent)'};
-  tabs.forEach(t=>{
-    const btn=document.getElementById('bkpTab'+t.charAt(0).toUpperCase()+t.slice(1));
-    const panel=document.getElementById('bkpPanel'+t.charAt(0).toUpperCase()+t.slice(1));
-    if(!btn||!panel)return;
-    const active=t===tab;
-    btn.style.background=active?colors[t]:'var(--bg3)';
-    btn.style.borderColor=active?colors[t]:'var(--border)';
-    btn.style.color=active?'#fff':'var(--text2)';
-    panel.style.display=active?'block':'none';
-  });
-}
-
-// ===== ONEDRIVE BACKUP =====
-const OD_CLIENT_ID_KEY='bshub_od_client_id';
-const OD_FILE_NAME='BSHub_backup.json';
-let odAccessToken=null;
-
-function odGetClientId(){return localStorage.getItem(OD_CLIENT_ID_KEY)||'';}
-function odSetClientId(v){localStorage.setItem(OD_CLIENT_ID_KEY,v.trim());}
-
-function odToggleConfig(){
-  const box=document.getElementById('odConfigBox');
-  if(box)box.style.display=box.style.display==='none'?'block':'none';
-}
-
-function odSalvarClientId(){
-  const val=document.getElementById('odInputClientId').value.trim();
-  if(!val){toast('Cole o App ID!','error');return;}
-  odSetClientId(val);
-  document.getElementById('odConfigBox').style.display='none';
-  odAtualizarStatus();
-  toast('App ID salvo!','success');
-}
-
-function odAtualizarStatus(){
-  const dot=document.getElementById('odStatusDot');
-  const txt=document.getElementById('odStatusText');
-  const btnC=document.getElementById('odBtnConectar');
-  const btnD=document.getElementById('odBtnDesconectar');
-  const acoes=document.getElementById('odAcoes');
-  if(!dot)return;
-  if(odAccessToken){
-    dot.style.background='var(--green2)';
-    txt.textContent='Conectado ao OneDrive ✓';
-    if(btnC)btnC.style.display='none';
-    if(btnD)btnD.style.display='block';
-    if(acoes)acoes.style.display='flex';
-    const ult=localStorage.getItem('bshub_od_ultimo');
-    const el=document.getElementById('odUltimoSalvo');
-    if(ult&&el)el.textContent='Último backup: '+ult;
-  }else{
-    const cid=odGetClientId();
-    dot.style.background=cid?'var(--yellow)':'var(--text3)';
-    txt.textContent=cid?'App ID configurado — clique para conectar':'Não configurado';
-    if(btnC)btnC.style.display='block';
-    if(btnD)btnD.style.display='none';
-    if(acoes)acoes.style.display='none';
-  }
-}
-
-function odConectar(){
-  const clientId=odGetClientId();
-  if(!clientId){
-    document.getElementById('odConfigBox').style.display='block';
-    toast('Configure o App ID primeiro','error');
-    return;
-  }
-  const redirectUri='https://login.microsoftonline.com/common/oauth2/nativeclient';
-  const authUrl='https://login.microsoftonline.com/common/oauth2/v2.0/authorize'+
-    '?client_id='+clientId+
-    '&response_type=token'+
-    '&redirect_uri='+encodeURIComponent(redirectUri)+
-    '&scope='+encodeURIComponent('https://graph.microsoft.com/Files.ReadWrite offline_access')+
-    '&response_mode=fragment';
-  const popup=window.open(authUrl,'_blank','width=520,height=650,left=200,top=100');
-  const timer=setInterval(()=>{
-    try{
-      const url=popup.location.href;
-      if(url.includes('access_token=')){
-        const params=new URLSearchParams(url.split('#')[1]);
-        odAccessToken=params.get('access_token');
-        clearInterval(timer);
-        popup.close();
-        odAtualizarStatus();
-        toast('✓ OneDrive conectado!','success');
-      }
-    }catch(e){}
-    if(popup.closed)clearInterval(timer);
-  },600);
-}
-
-function odDesconectar(){
-  odAccessToken=null;
-  odAtualizarStatus();
-  toast('Desconectado do OneDrive','success');
-}
-
-async function odSalvar(){
-  if(!odAccessToken){toast('Conecte ao OneDrive primeiro','error');return;}
-  toast('Salvando no OneDrive...','success');
-  try{
-    const conteudo=JSON.stringify(state,null,2);
-    const resp=await fetch(
-      'https://graph.microsoft.com/v1.0/me/drive/root:/'+OD_FILE_NAME+':/content',
-      {method:'PUT',headers:{'Authorization':'Bearer '+odAccessToken,'Content-Type':'application/json'},body:conteudo}
-    );
-    if(!resp.ok)throw new Error(await resp.text());
-    const now=new Date().toLocaleString('pt-BR');
-    localStorage.setItem('bshub_od_ultimo',now);
-    const el=document.getElementById('odUltimoSalvo');
-    if(el)el.textContent='Último backup: '+now;
-    toast('✓ Salvo no OneDrive!','success');
-  }catch(e){
-    console.error(e);
-    toast('Erro ao salvar. Tente reconectar.','error');
-  }
-}
-
-async function odRestaurar(){
-  if(!odAccessToken){toast('Conecte ao OneDrive primeiro','error');return;}
-  toast('Buscando backup...','success');
-  try{
-    const resp=await fetch(
-      'https://graph.microsoft.com/v1.0/me/drive/root:/'+OD_FILE_NAME+':/content',
-      {headers:{'Authorization':'Bearer '+odAccessToken}}
-    );
-    if(resp.status===404){toast('Nenhum backup encontrado no OneDrive','error');return;}
-    const dados=await resp.json();
-    if(!dados.grupos||!dados.clientes){toast('Arquivo inválido no OneDrive','error');return;}
-    confirm2('Restaurar do OneDrive?','Os dados atuais serão substituídos pelo backup.',()=>{
-      Object.assign(state,dados);
-      saveState();
-      currentGrupo=state.grupos[0]||'';
-      closeOverlay('overlayBackup');
-      renderAll();
-      toast('✓ Dados restaurados do OneDrive!','success');
-    });
-  }catch(e){
-    console.error(e);
-    toast('Erro ao restaurar. Tente reconectar.','error');
-  }
-}
-
-function toggleGdConfig(){
-  const box = document.getElementById('gdConfigBox');
-  box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
-
-function salvarClientId(){
-  const val = document.getElementById('inputClientId').value.trim();
-  if(!val){ toast('Cole o Client ID!','error'); return; }
-  localStorage.setItem(GD_CLIENT_ID_KEY, val);
-  document.getElementById('gdConfigBox').style.display = 'none';
-  gapiReady = false; gisReady = false; gdAccessToken = null;
-  inicializarGoogleAPIs();
-  toast('Client ID salvo!','success');
-}
-
-function atualizarStatusGD(){
-  const dot = document.getElementById('gdStatusDot');
-  const txt = document.getElementById('gdStatusText');
-  const btnC = document.getElementById('btnConectar');
-  const btnD = document.getElementById('btnDesconectar');
-  const acoes = document.getElementById('gdAcoes');
-  if(gdAccessToken){
-    dot.style.background = 'var(--green)';
-    txt.textContent = 'Conectado ao Google Drive ✓';
-    btnC.style.display = 'none';
-    btnD.style.display = 'block';
-    acoes.style.display = 'flex';
-    // mostra último salvo
-    const ult = localStorage.getItem('bshub_gd_ultimo');
-    if(ult) document.getElementById('gdUltimoSalvo').textContent = 'Último backup: '+ult;
-  } else {
-    dot.style.background = getSavedClientId() ? 'var(--yellow)' : 'var(--text3)';
-    txt.textContent = getSavedClientId() ? 'Client ID configurado — clique para conectar' : 'Não configurado';
-    btnC.style.display = 'block';
-    btnD.style.display = 'none';
-    acoes.style.display = 'none';
-  }
-}
-
-function inicializarGoogleAPIs(){
-  const clientId = getSavedClientId();
-  if(!clientId) return;
-
-  // Carrega GAPI
-  if(!document.getElementById('gapiScript')){
-    const s = document.createElement('script');
-    s.id = 'gapiScript';
-    s.src = 'https://apis.google.com/js/api.js';
-    s.onload = ()=>{
-      gapi.load('client', async ()=>{
-        await gapi.client.init({ discoveryDocs:['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] });
-        gapiReady = true;
-      });
-    };
-    document.head.appendChild(s);
-  }
-
-  // Carrega GIS
-  if(!document.getElementById('gisScript')){
-    const s = document.createElement('script');
-    s.id = 'gisScript';
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.onload = ()=>{
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: GD_SCOPES,
-        callback: async (resp)=>{
-          if(resp.error){ toast('Erro ao conectar: '+resp.error,'error'); return; }
-          gdAccessToken = resp.access_token;
-          gapi.client.setToken({access_token: gdAccessToken});
-          atualizarStatusGD();
-          toast('✓ Google Drive conectado!','success');
-        }
-      });
-      gisReady = true;
-    };
-    document.head.appendChild(s);
-  }
-}
-
-function conectarGoogle(){
-  const clientId = getSavedClientId();
-  if(!clientId){
-    document.getElementById('gdConfigBox').style.display = 'block';
-    toast('Configure o Client ID primeiro','error');
-    return;
-  }
-  if(!gisReady){
-    inicializarGoogleAPIs();
-    toast('Carregando APIs do Google...','success');
-    setTimeout(()=>{ if(gisReady && tokenClient) tokenClient.requestAccessToken({prompt:''}); }, 2500);
-    return;
-  }
-  tokenClient.requestAccessToken({prompt:''});
-}
-
-function desconectarGoogle(){
-  if(gdAccessToken) google.accounts.oauth2.revoke(gdAccessToken);
-  gdAccessToken = null; gdFileId = null;
-  atualizarStatusGD();
-  toast('Desconectado do Google Drive','success');
-}
-
-async function buscarArquivoDrive(){
-  // Busca arquivo existente pelo nome
-  const res = await gapi.client.drive.files.list({
-    q: `name='${GD_FILE_NAME}' and trashed=false`,
-    fields: 'files(id,name,modifiedTime)',
-    spaces: 'drive'
-  });
-  const files = res.result.files;
-  return files && files.length ? files[0] : null;
-}
-
-async function salvarNoDrive(){
-  if(!gdAccessToken){ toast('Conecte ao Google Drive primeiro','error'); return; }
-  try{
-    toast('Salvando no Drive...','success');
-    const conteudo = JSON.stringify(state, null, 2);
-    const arquivo = await buscarArquivoDrive();
-
-    const boundary = '-------bs_dp_boundary';
-    const metadata = JSON.stringify({name: GD_FILE_NAME, mimeType:'application/json'});
-    const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${metadata}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${conteudo}\r\n--${boundary}--`;
-
-    const method = arquivo ? 'PATCH' : 'POST';
-    const url = arquivo
-      ? `https://www.googleapis.com/upload/drive/v3/files/${arquivo.id}?uploadType=multipart`
-      : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-
-    const resp = await fetch(url, {
-      method,
-      headers: {
-        'Authorization': 'Bearer '+gdAccessToken,
-        'Content-Type': `multipart/related; boundary=${boundary}`
-      },
-      body
-    });
-
-    if(!resp.ok) throw new Error(await resp.text());
-
-    const now = new Date();
-    const stamp = now.toLocaleString('pt-BR');
-    localStorage.setItem('bshub_gd_ultimo', stamp);
-    document.getElementById('gdUltimoSalvo').textContent = 'Último backup: '+stamp;
-    toast('✓ Salvo no Google Drive!','success');
-  }catch(e){
-    console.error(e);
-    toast('Erro ao salvar no Drive. Tente reconectar.','error');
-  }
-}
-
-async function restaurarDoDrive(){
-  if(!gdAccessToken){ toast('Conecte ao Google Drive primeiro','error'); return; }
-  try{
-    toast('Buscando backup no Drive...','success');
-    const arquivo = await buscarArquivoDrive();
-    if(!arquivo){ toast('Nenhum backup encontrado no Drive','error'); return; }
-
-    const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${arquivo.id}?alt=media`, {
-      headers:{ 'Authorization':'Bearer '+gdAccessToken }
-    });
-    const dados = await resp.json();
-    if(!dados.grupos||!dados.clientes){ toast('Arquivo inválido no Drive','error'); return; }
-
-    confirm2(
-      'Restaurar do Google Drive?',
-      'Os dados atuais serão substituídos pelo backup do Drive.',
-      ()=>{
-        Object.assign(state, dados);
-        saveState();
-        currentGrupo = state.grupos[0]||'';
-        closeOverlay('overlayBackup');
-        renderAll();
-        toast('✓ Dados restaurados do Drive!','success');
-      }
-    );
-  }catch(e){
-    console.error(e);
-    toast('Erro ao restaurar do Drive. Tente reconectar.','error');
-  }
 }
 
 // ===== BACKUP LOCAL =====
@@ -5582,8 +5214,6 @@ function restaurarBackup(event){
   reader.readAsText(file);
 }
 
-// Inicializa APIs ao carregar se já tem Client ID
-if(getSavedClientId()) inicializarGoogleAPIs();
 
 
 
@@ -5877,9 +5507,7 @@ function dashGoGrupo(g){
 function dashFiltroPendentes(){
   closeOverlay('overlayDash');
   currentFilter='pendente';
-  const el=document.getElementById('filterPend');
   document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
-  if(el)el.classList.add('active');
   renderCards();
 }
 
@@ -6465,10 +6093,6 @@ function mesPrevKey(){
 function mesJaInicializado(mk){
   const prefix=mk+'|';
   return Object.keys(state.obrigacoes).some(k=>k.startsWith(prefix));
-}
-
-function contarEmpresasAtivas(){
-  return state.grupos.reduce((n,g)=>n+(state.clientes[g]||[]).filter(c=>c.ativo).length,0);
 }
 
 // Recorrência 100% automática — sem modal, sem perguntas
@@ -7149,11 +6773,6 @@ function getSubtarefas(cid){
 function getSubStatus(cid,sid){
   return !!(state.subStatus?.[`${mesKey()}|${cid}|${sid}`]);
 }
-function isSubPinned(cid,sid){
-  const subs=getSubtarefas(cid);
-  const s=subs.find(x=>x.id===sid);
-  return !!(s?.pinned);
-}
 
 function buildSubRow(cid,s){
   const isDone=getSubStatus(cid,s.id);
@@ -7170,8 +6789,6 @@ function buildSubRow(cid,s){
 function buildSubtarefasHTML(cid){
   // subs filtradas pelo mês — fixadas + criadas neste mês
   const subs=getSubtarefas(cid);
-  // total real no cadastro (para mostrar badge de fixadas)
-  const todasFixadas=(state.subtarefas?.[cid]||[]).filter(s=>s.pinned).length;
   const total=subs.length;
   const done=subs.filter(s=>getSubStatus(cid,s.id)).length;
   const pinnedVisiveis=subs.filter(s=>s.pinned).length;
@@ -7199,17 +6816,6 @@ function buildSubtarefasHTML(cid){
   </div>`;
 }
 
-function subImportarAtivo(cid){
-  if(!state.subImportar)return true;
-  return state.subImportar[cid]!==false;
-}
-
-function toggleSubImportar(cid,val){
-  if(!state.subImportar)state.subImportar={};
-  state.subImportar[cid]=val;
-  saveState();
-  toast(val?'Subtarefas serão copiadas no próximo mês':'Subtarefas não serão copiadas','success');
-}
 
 function toggleSubWrap(cid){
   const wrap=document.getElementById('subWrap_'+cid);
@@ -7443,44 +7049,6 @@ function duplicarEmpresa(cid){
   setTimeout(()=>document.getElementById('mDoc').focus(), 100);
 }
 
-// ============================================================
-// ===== 5. HISTÓRICO DETALHADO =====
-// ============================================================
-// Substituir a seção de histórico na ficha da empresa por versão detalhada
-function buildHistoricoDetalhado(c){
-  const meses = [];
-  const hoje = new Date();
-  for(let i=5; i>=0; i--){
-    let m = hoje.getMonth() - i;
-    let a = hoje.getFullYear();
-    while(m < 0){ m += 12; a--; }
-    meses.push({mes:m, ano:a, key:mkStr(m,a)});
-  }
-  return meses.map(({mes,ano,key})=>{
-    const rotinas = getRotinasByCliente(c);
-    const entregue = !!(state.entregues[`${key}|${c.id}`]);
-    const obsDone = rotinas.filter(r=>state.obrigacoes[`${key}|${c.id}|${r.id}`]);
-    const obsPend = rotinas.filter(r=>!state.obrigacoes[`${key}|${c.id}|${r.id}`]);
-    const mesNome = MESES[mes].slice(0,3).toUpperCase()+' '+ano;
-    const badge = entregue
-      ? `<span class="hist-mes-badge ok">✓ Entregue</span>`
-      : rotinas.length > 0
-        ? `<span class="hist-mes-badge pend">${obsDone.length}/${rotinas.length}</span>`
-        : `<span class="hist-mes-badge" style="background:var(--bg3);color:var(--text3);">Sem rotinas</span>`;
-    const items = rotinas.map(r=>{
-      const k = `${key}|${c.id}|${r.id}`;
-      const done = !!(state.obrigacoes[k]);
-      const data = state.obrigacoes[k+'_d']||'';
-      return `<div class="hist-ob-item ${done?'done':'pend'}">
-        ${r.nome}${done&&data?`<span class="hist-ob-data">${data}</span>`:''}
-      </div>`;
-    }).join('');
-    return `<div class="hist-mes-detalhe">
-      <div class="hist-mes-titulo">${mesNome} ${badge}</div>
-      <div class="hist-ob-grid">${items||'<span style="font-size:10px;color:var(--text3);">Nenhuma rotina</span>'}</div>
-    </div>`;
-  }).join('');
-}
 
 // ============================================================
 // ===== 10. RELATÓRIO MENSAL DO ESCRITÓRIO =====
@@ -7605,10 +7173,9 @@ ${dadosGrupos.map(({g,comRotinas,entregues,pendentes,color})=>{
   w.document.close();
 }
 
-// Migração de estado: garante subStatus e subImportar existem
+// Migração de estado: garante que subStatus/subtarefas existem
 if(!state.subStatus)state.subStatus={};
 if(!state.subtarefas)state.subtarefas={};
-if(!state.subImportar)state.subImportar={};
 if(!state.obsMes)state.obsMes={};
 // Garante portais inicializados
 if(!state.portais||!Array.isArray(state.portais)||!state.portais.length){
@@ -8391,427 +7958,6 @@ function iniciarSistema(){
 }
 
 
-
-// ═══════════════════════════════════════════════════════════════════════════
-// IMPORTAÇÃO DE DADOS DO LOCALSTORAGE (bshub_v3) PARA SUPABASE
-// ═══════════════════════════════════════════════════════════════════════════
-// Rodado automaticamente quando o usuário loga:
-//   - Verifica se existe 'bshub_v3' no localStorage
-//   - Se sim: mostra botão 📥 Importar no header (só para admin)
-//   - Se não: botão fica escondido
-
-function verificarLocalStorageAntigo(){
-  const btn = document.getElementById('btnImportar');
-  if(!btn) return;
-  // Só admin pode importar
-  if(!isAdmin || !isAdmin()){
-    btn.style.display = 'none';
-    return;
-  }
-  // Verifica se há dados no localStorage antigo
-  const raw = localStorage.getItem('bshub_v3');
-  if(!raw){
-    btn.style.display = 'none';
-    return;
-  }
-  try {
-    const s = JSON.parse(raw);
-    const temClientes = s && s.clientes && Object.keys(s.clientes).length > 0;
-    if(temClientes){
-      btn.style.display = 'inline-flex';
-      console.log('[Import] Dados antigos detectados no localStorage — botão exibido');
-    } else {
-      btn.style.display = 'none';
-    }
-  } catch(e){
-    console.error('[Import] Erro ao ler localStorage antigo:', e);
-    btn.style.display = 'none';
-  }
-}
-
-function abrirPreviewImportacao(){
-  const raw = localStorage.getItem('bshub_v3');
-  if(!raw){ alert('Não encontrei dados antigos no navegador.'); return; }
-  
-  let s;
-  try { s = JSON.parse(raw); }
-  catch(e){ alert('Erro ao ler dados: '+e.message); return; }
-  
-  // Contar tudo
-  const gruposArr = Array.isArray(s.grupos) ? s.grupos : [];
-  const nomesGrupo = Object.keys(s.clientes || {});
-  let totalEmp = 0, totalAtivas = 0, totalInativas = 0, totalComPortal = 0;
-  nomesGrupo.forEach(g => {
-    (s.clientes[g] || []).forEach(e => {
-      totalEmp++;
-      if(e.ativo === false) totalInativas++; else totalAtivas++;
-      if(e.login || e.senha || e.gov || e.codAcesso) totalComPortal++;
-    });
-  });
-  const totalEntregues = Object.keys(s.entregues || {}).length;
-  const totalObs = Object.keys(s.obsMes || {}).length;
-  let totalSubs = 0, totalSubStatus = Object.keys(s.subStatus || {}).length;
-  Object.values(s.subtarefas || {}).forEach(arr => { if(Array.isArray(arr)) totalSubs += arr.length; });
-  const totalBaixas = Object.keys(s.finBaixas || {}).length;
-  const totalRotinasCustom = Array.isArray(s.rotinas) 
-    ? s.rotinas.filter(r => !r.builtin).length 
-    : 0;
-  
-  const stats = document.getElementById('importPreviewStats');
-  stats.innerHTML = `
-    <div>📁 <strong>${gruposArr.length}</strong> grupo(s) <span style="color:#94a3b8;">— ${gruposArr.join(', ')}</span></div>
-    <div>🏢 <strong>${totalEmp}</strong> empresa(s) <span style="color:#94a3b8;">— ${totalAtivas} ativas, ${totalInativas} inativas</span></div>
-    ${totalRotinasCustom > 0 ? `<div>⚙️ <strong>${totalRotinasCustom}</strong> rotina(s) customizada(s)</div>` : ''}
-    <div>✅ <strong>${totalEntregues}</strong> fechamento(s) mensal(is)</div>
-    <div>📝 <strong>${totalSubs}</strong> subtarefa(s) + <strong>${totalSubStatus}</strong> marcação(ões)</div>
-    ${totalObs > 0 ? `<div>💬 <strong>${totalObs}</strong> observação(ões) mensal(is) <span style="color:#94a3b8;">— não serão importadas nesta fase</span></div>` : ''}
-    <div>💰 <strong>${totalBaixas}</strong> baixa(s) financeira(s)</div>
-    ${totalComPortal > 0 ? `<div>🔐 <strong>${totalComPortal}</strong> empresa(s) com credenciais de portal</div>` : ''}
-  `;
-  
-  const _mp = document.getElementById('modalImportPreview');
-  if(_mp.parentElement !== document.body) document.body.appendChild(_mp);
-  _mp.style.cssText = 'display:flex !important;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2147483647;align-items:center;justify-content:center;padding:20px;font-family:Segoe UI,system-ui,sans-serif;';
-}
-
-function fecharModalImportPreview(){
-  document.getElementById('modalImportPreview').style.display = 'none';
-}
-
-// Adiciona linha no log de progresso
-function impLog(icone, texto, contador){
-  const lista = document.getElementById('importProgLista');
-  const div = document.createElement('div');
-  div.className = 'imp-linha';
-  div.innerHTML = `<span class="imp-${icone}">${icone==='check'?'✓':icone==='erro'?'✗':'⏳'}</span> <span>${texto}</span>` + 
-                  (contador !== undefined ? `<span class="imp-contador">${contador}</span>` : '');
-  lista.appendChild(div);
-  lista.scrollTop = lista.scrollHeight;
-  return div;
-}
-
-function impAtualizarLinha(div, icone, texto, contador){
-  div.className = 'imp-linha';
-  div.innerHTML = `<span class="imp-${icone}">${icone==='check'?'✓':icone==='erro'?'✗':'⏳'}</span> <span>${texto}</span>` + 
-                  (contador !== undefined ? `<span class="imp-contador">${contador}</span>` : '');
-}
-
-async function executarImportacao(){
-  fecharModalImportPreview();
-  const _mp2 = document.getElementById('modalImportProgresso');
-  if(_mp2.parentElement !== document.body) document.body.appendChild(_mp2);
-  _mp2.style.cssText = 'display:flex !important;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2147483647;align-items:center;justify-content:center;padding:20px;font-family:Segoe UI,system-ui,sans-serif;';
-  document.getElementById('importProgTitulo').textContent = '⏳ Importando dados...';
-  document.getElementById('importProgLista').innerHTML = '';
-  document.getElementById('importProgAcoes').style.display = 'none';
-  
-  const s = JSON.parse(localStorage.getItem('bshub_v3'));
-  const escritorioId = usuarioAtual?.escritorio_id;
-  if(!escritorioId){
-    impLog('erro', 'Erro: escritório não identificado. Faça logout e login de novo.');
-    return;
-  }
-  
-  const erros = [];
-  const mapaGrupos = {};  // { 'CGC': uuid, 'BS': uuid, ... }
-  
-  try {
-    // ═══════════════════════════════════════════════════════════════════════
-    // 1) GRUPOS
-    // ═══════════════════════════════════════════════════════════════════════
-    const l1 = impLog('spin', 'Grupos...');
-    const gruposArr = Array.isArray(s.grupos) ? s.grupos : [];
-    const cores = s.grupoColors || {};
-    const gruposParaInserir = gruposArr.map((nome, i) => ({
-      escritorio_id: escritorioId,
-      nome: nome,
-      cor: cores[nome] || '#3b82f6',
-      ordem: i
-    }));
-    
-    // Upsert: se já existe grupo com mesmo nome, não duplica
-    const { data: gruposCriados, error: eGrp } = await sb
-      .from('grupos')
-      .upsert(gruposParaInserir, { onConflict: 'escritorio_id,nome' })
-      .select();
-    
-    if(eGrp) throw new Error('Grupos: ' + eGrp.message);
-    gruposCriados.forEach(g => { mapaGrupos[g.nome] = g.id; });
-    impAtualizarLinha(l1, 'check', 'Grupos', `${gruposCriados.length}/${gruposArr.length}`);
-    
-    // ═══════════════════════════════════════════════════════════════════════
-    // 2) VÍNCULO USUÁRIO ↔ GRUPOS (admin vê tudo mas registramos)
-    // ═══════════════════════════════════════════════════════════════════════
-    const l2 = impLog('spin', 'Seu acesso aos grupos...');
-    const vinculos = gruposCriados.map(g => ({
-      user_id: usuarioAtual.id,
-      grupo_id: g.id,
-      escritorio_id: escritorioId
-    }));
-    const { error: eVinc } = await sb
-      .from('user_grupos')
-      .upsert(vinculos, { onConflict: 'user_id,grupo_id' });
-    if(eVinc){ erros.push('user_grupos: ' + eVinc.message); }
-    impAtualizarLinha(l2, 'check', 'Seu acesso aos grupos', `${vinculos.length}/${vinculos.length}`);
-    
-    // ═══════════════════════════════════════════════════════════════════════
-    // 3) EMPRESAS + EMPRESA_GRUPOS
-    // ═══════════════════════════════════════════════════════════════════════
-    const l3 = impLog('spin', 'Empresas...');
-    // Dedupe empresas por ID (empresa pode aparecer em vários grupos - fica só a 1ª ocorrência)
-    // Vínculos empresa↔grupo são coletados de TODAS as ocorrências
-    const empresasMap = new Map();       // id → objeto empresa (deduplicado)
-    const vinculosSet = new Set();       // "empresa_id|grupo_id" para dedupe
-    const empresaGruposParaInserir = [];
-    
-    Object.keys(s.clientes || {}).forEach(nomeGrupo => {
-      const gid = mapaGrupos[nomeGrupo];
-      if(!gid) return;
-      
-      (s.clientes[nomeGrupo] || []).forEach(emp => {
-        if(!emp.id){ return; }  // sem ID, pula
-        
-        // 1) DEDUPLICAR empresa: só a primeira ocorrência do id é guardada
-        if(!empresasMap.has(emp.id)){
-          empresasMap.set(emp.id, {
-            id: emp.id,
-            escritorio_id: escritorioId,
-            nome: emp.nome || '(sem nome)',
-            doc: emp.doc || null,
-            cod: emp.cod || null,
-            mei: !!emp.mei,
-            folha: !!emp.folha,
-            inss: !!emp.inss,
-            fgts: !!emp.fgts,
-            consignado: !!emp.consignado,
-            horas: !!emp.horas,
-            comp_ini: emp.compIni || null,
-            comp_fim: emp.compFim || null,
-            whats: emp.whats || null,
-            email: emp.email || null,
-            login: emp.login || null,
-            senha: emp.senha || null,
-            gov: emp.gov || null,
-            cod_acesso: emp.codAcesso || null,
-            emp_web_login: emp.empWebLogin || null,
-            emp_web_senha: emp.empWebSenha || null,
-            obs: emp.obs || null,
-            rotinas: Array.isArray(emp.rotinas) ? emp.rotinas : [],
-            anuais: Array.isArray(emp.anuais) ? emp.anuais : [],
-            ativo: emp.ativo !== false,
-            criado_por: usuarioAtual.id
-          });
-        }
-        
-        // 2) COLETAR VÍNCULOS: de todos os grupos onde a empresa aparece
-        // Fonte 1: o próprio grupo onde ela está listada agora
-        // Fonte 2: o array emp.grupos se existir e tiver mais grupos
-        const gruposDaEmp = new Set([nomeGrupo]);
-        if(Array.isArray(emp.grupos)) emp.grupos.forEach(g => gruposDaEmp.add(g));
-        if(emp.grupo) gruposDaEmp.add(emp.grupo);
-        
-        gruposDaEmp.forEach(ng => {
-          const gidAlvo = mapaGrupos[ng];
-          if(!gidAlvo) return;
-          const chave = emp.id + '|' + gidAlvo;
-          if(vinculosSet.has(chave)) return;
-          vinculosSet.add(chave);
-          empresaGruposParaInserir.push({
-            empresa_id: emp.id,
-            grupo_id: gidAlvo,
-            escritorio_id: escritorioId
-          });
-        });
-      });
-    });
-    
-    const empresasParaInserir = Array.from(empresasMap.values());
-    
-    // Inserir empresas em lotes (Supabase limita ~1000 por request)
-    const { error: eEmp } = await sb.from('empresas').upsert(empresasParaInserir, { onConflict: 'id' });
-    if(eEmp) throw new Error('Empresas: ' + eEmp.message);
-    impAtualizarLinha(l3, 'check', 'Empresas', `${empresasParaInserir.length}/${empresasParaInserir.length}`);
-    
-    const l4 = impLog('spin', 'Vínculos empresa↔grupo...');
-    const { error: eEg } = await sb.from('empresa_grupos').upsert(empresaGruposParaInserir, { onConflict: 'empresa_id,grupo_id' });
-    if(eEg) throw new Error('Empresa_grupos: ' + eEg.message);
-    impAtualizarLinha(l4, 'check', 'Vínculos empresa↔grupo', `${empresaGruposParaInserir.length}/${empresaGruposParaInserir.length}`);
-    
-    // ═══════════════════════════════════════════════════════════════════════
-    // 4) ROTINAS CUSTOMIZADAS (built-in já existem via trigger)
-    // ═══════════════════════════════════════════════════════════════════════
-    const l5 = impLog('spin', 'Rotinas customizadas...');
-    const rotinasCustom = (Array.isArray(s.rotinas) ? s.rotinas : []).filter(r => !r.builtin);
-    if(rotinasCustom.length > 0){
-      const rots = rotinasCustom.map((r, i) => ({
-        id: r.id,
-        escritorio_id: escritorioId,
-        nome: r.name || r.nome,
-        cor: r.color || r.cor || '#3b82f6',
-        builtin: false,
-        ordem: 100 + i
-      }));
-      const { error: eRot } = await sb.from('rotinas').upsert(rots, { onConflict: 'id,escritorio_id' });
-      if(eRot){ erros.push('Rotinas: ' + eRot.message); }
-    }
-    impAtualizarLinha(l5, 'check', 'Rotinas customizadas', `${rotinasCustom.length}/${rotinasCustom.length}`);
-    
-    // ═══════════════════════════════════════════════════════════════════════
-    // 5) ENTREGAS (fechamento por competência)
-    // ═══════════════════════════════════════════════════════════════════════
-    const l6 = impLog('spin', 'Entregas mensais...');
-    // Dedupe por (empresa_id + mes_ref) - garantia mesmo se localStorage tiver duplicatas
-    const entregasMap = new Map();
-    Object.entries(s.entregues || {}).forEach(([chave, timestamp]) => {
-      const [mes, empresaId] = chave.split('|');
-      if(!mes || !empresaId) return;
-      const uniq = empresaId + '|' + mes;
-      if(entregasMap.has(uniq)) return;
-      entregasMap.set(uniq, {
-        escritorio_id: escritorioId,
-        empresa_id: empresaId,
-        mes_ref: mes,
-        entregue_em: timestamp,
-        entregue_por: usuarioAtual.id
-      });
-    });
-    const entregasArr = Array.from(entregasMap.values());
-    // Inserir em lotes de 500
-    let entOk = 0;
-    for(let i = 0; i < entregasArr.length; i += 500){
-      const lote = entregasArr.slice(i, i+500);
-      const { error: eEnt } = await sb.from('entregas').upsert(lote, { onConflict: 'empresa_id,mes_ref' });
-      if(eEnt){ erros.push('Entregas lote '+i+': '+eEnt.message); break; }
-      entOk += lote.length;
-      impAtualizarLinha(l6, 'spin', 'Entregas mensais...', `${entOk}/${entregasArr.length}`);
-    }
-    impAtualizarLinha(l6, 'check', 'Entregas mensais', `${entOk}/${entregasArr.length}`);
-    
-    // ═══════════════════════════════════════════════════════════════════════
-    // 6) SUBTAREFAS + STATUS
-    // ═══════════════════════════════════════════════════════════════════════
-    const l7 = impLog('spin', 'Subtarefas...');
-    // Dedupe por id de subtarefa
-    const subsMap = new Map();
-    Object.entries(s.subtarefas || {}).forEach(([empresaId, arr]) => {
-      if(!Array.isArray(arr)) return;
-      arr.forEach(sub => {
-        if(!sub.id) return;
-        if(subsMap.has(sub.id)) return;
-        subsMap.set(sub.id, {
-          id: sub.id,
-          escritorio_id: escritorioId,
-          empresa_id: empresaId,
-          texto: sub.texto || '(sem texto)',
-          mes_ref: sub.mesRef || null,
-          fixada: !!sub.pinned || !!sub.fixada,
-          criada_por: usuarioAtual.id
-        });
-      });
-    });
-    const subsArr = Array.from(subsMap.values());
-    if(subsArr.length > 0){
-      const { error: eSub } = await sb.from('subtarefas').upsert(subsArr, { onConflict: 'id' });
-      if(eSub){ erros.push('Subtarefas: '+eSub.message); }
-    }
-    impAtualizarLinha(l7, 'check', 'Subtarefas', `${subsArr.length}/${subsArr.length}`);
-    
-    const l8 = impLog('spin', 'Marcações de subtarefa...');
-    const subStatusMap = new Map();
-    Object.entries(s.subStatus || {}).forEach(([chave, feito]) => {
-      const [mes, empresaId, subId] = chave.split('|');
-      if(!mes || !subId || !feito) return;
-      const uniq = subId + '|' + mes;
-      if(subStatusMap.has(uniq)) return;
-      subStatusMap.set(uniq, {
-        escritorio_id: escritorioId,
-        subtarefa_id: subId,
-        mes_ref: mes,
-        concluida: true,
-        concluida_por: usuarioAtual.id
-      });
-    });
-    const subStatusArr = Array.from(subStatusMap.values());
-    if(subStatusArr.length > 0){
-      const { error: eSs } = await sb.from('subtarefa_status').upsert(subStatusArr, { onConflict: 'subtarefa_id,mes_ref' });
-      if(eSs){ erros.push('Subtarefa_status: '+eSs.message); }
-    }
-    impAtualizarLinha(l8, 'check', 'Marcações de subtarefa', `${subStatusArr.length}/${subStatusArr.length}`);
-    
-    // ═══════════════════════════════════════════════════════════════════════
-    // 7) BAIXAS FINANCEIRAS (só admin)
-    // ═══════════════════════════════════════════════════════════════════════
-    const l9 = impLog('spin', 'Baixas financeiras...');
-    const baixasMap = new Map();
-    Object.entries(s.finBaixas || {}).forEach(([chave, dataBr]) => {
-      const [mes, empresaId] = chave.split('|');
-      if(!mes || !empresaId) return;
-      // Converter data 'DD/MM/YYYY' → 'YYYY-MM-DD'
-      let dataIso = null;
-      if(dataBr && dataBr.includes('/')){
-        const [d, m, y] = dataBr.split('/');
-        if(d && m && y) dataIso = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-      }
-      if(!dataIso) return;
-      const uniq = empresaId + '|' + mes;
-      if(baixasMap.has(uniq)) return;
-      baixasMap.set(uniq, {
-        escritorio_id: escritorioId,
-        empresa_id: empresaId,
-        mes_ref: mes,
-        data_baixa: dataIso,
-        baixado_por: usuarioAtual.id
-      });
-    });
-    const baixasArr = Array.from(baixasMap.values());
-    if(baixasArr.length > 0){
-      const { error: eBx } = await sb.from('fin_baixas').upsert(baixasArr, { onConflict: 'empresa_id,mes_ref' });
-      if(eBx){ erros.push('Fin_baixas: '+eBx.message); }
-    }
-    impAtualizarLinha(l9, 'check', 'Baixas financeiras', `${baixasArr.length}/${baixasArr.length}`);
-    
-    // ═══════════════════════════════════════════════════════════════════════
-    // FINALIZAÇÃO
-    // ═══════════════════════════════════════════════════════════════════════
-    impLog('check', '━━━━━━━━━━━━━━━━━━━━━━━━━');
-    if(erros.length === 0){
-      impLog('check', 'IMPORTAÇÃO CONCLUÍDA COM SUCESSO! 🎉');
-      document.getElementById('importProgTitulo').textContent = '✅ Concluído!';
-      document.getElementById('importProgSubtitulo').textContent = 'Seus dados foram migrados para o Supabase';
-    } else {
-      impLog('erro', `Concluído com ${erros.length} aviso(s):`);
-      erros.forEach(e => impLog('erro', '  ' + e));
-      document.getElementById('importProgTitulo').textContent = '⚠️ Concluído com avisos';
-      document.getElementById('importProgSubtitulo').textContent = 'Verifique as mensagens abaixo';
-    }
-    document.getElementById('importProgAcoes').style.display = 'block';
-    
-    // Marcar que já importou (para o botão sumir)
-    localStorage.setItem('bshub_importado_em', new Date().toISOString());
-    
-  } catch(e){
-    console.error('[Import] Erro fatal:', e);
-    impLog('erro', 'ERRO FATAL: ' + e.message);
-    impLog('erro', 'A importação foi interrompida. Nada foi perdido do navegador.');
-    document.getElementById('importProgTitulo').textContent = '✗ Erro na importação';
-    document.getElementById('importProgSubtitulo').textContent = 'Copie o erro e me chame para ajudar';
-    document.getElementById('importProgAcoes').style.display = 'block';
-  }
-}
-
-function finalizarImportacao(){
-  document.getElementById('modalImportProgresso').style.display = 'none';
-  // Esconder botão de importação
-  const btn = document.getElementById('btnImportar');
-  if(btn) btn.style.display = 'none';
-  // Recarregar sistema para pegar dados novos do Supabase
-  location.reload();
-}
-
-// Verificar localStorage antigo quando o sistema abrir
-// (chamada em atrasada para garantir que usuarioAtual esteja carregado)
-setTimeout(verificarLocalStorageAntigo, 1500);
-
 </script>
 
 
@@ -8863,45 +8009,6 @@ setTimeout(verificarLocalStorageAntigo, 1500);
   <div class="modal-btns"><button class="btn-cancel" onclick="closeOverlay('overlayFin')">Fechar</button></div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<!-- MODAIS DE IMPORTAÇÃO DO LOCALSTORAGE                                    -->
-<!-- ═══════════════════════════════════════════════════════════════════════ -->
-<div id="modalImportPreview" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100000;align-items:center;justify-content:center;padding:20px;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;">
-  <div style="background:#fff;border-radius:14px;max-width:520px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,.3);overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;padding:22px 28px;">
-      <div style="font-size:20px;font-weight:800;margin-bottom:4px;">📥 Importar dados do navegador</div>
-      <div style="font-size:12.5px;opacity:.9;">Encontrei dados do BSHub antigo no seu navegador</div>
-    </div>
-    <div style="padding:24px 28px;color:#0f172a;">
-      <div id="importPreviewStats" style="font-size:13.5px;line-height:1.9;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-bottom:16px;"></div>
-      <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:9px;padding:12px 14px;font-size:12px;color:#78350f;line-height:1.6;">
-        <strong>⚠ Importante:</strong><br>
-        • Os dados do navegador <strong>não serão apagados</strong> — ficam intactos até você decidir<br>
-        • Você pode importar mais de uma vez (últimos valores sobrescrevem)<br>
-        • O botão vai sumir do header após concluir com sucesso
-      </div>
-    </div>
-    <div style="padding:16px 28px 22px 28px;display:flex;gap:10px;justify-content:flex-end;">
-      <button onclick="fecharModalImportPreview()" style="padding:10px 20px;background:#f1f5f9;color:#0f172a;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">Cancelar</button>
-      <button onclick="executarImportacao()" style="padding:10px 22px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 6px 16px rgba(245,158,11,.35);">Importar agora →</button>
-    </div>
-  </div>
-</div>
-
-<div id="modalImportProgresso" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100001;align-items:center;justify-content:center;padding:20px;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;">
-  <div style="background:#fff;border-radius:14px;max-width:520px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,.3);overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#1d4ed8,#1e40af);color:#fff;padding:22px 28px;">
-      <div style="font-size:20px;font-weight:800;margin-bottom:4px;" id="importProgTitulo">⏳ Importando dados...</div>
-      <div style="font-size:12.5px;opacity:.9;" id="importProgSubtitulo">Não feche esta janela</div>
-    </div>
-    <div style="padding:24px 28px;">
-      <div id="importProgLista" style="font-family:'SF Mono',Consolas,Monaco,monospace;font-size:12.5px;line-height:1.9;color:#334155;max-height:280px;overflow-y:auto;"></div>
-      <div id="importProgAcoes" style="margin-top:20px;display:none;text-align:right;">
-        <button onclick="finalizarImportacao()" style="padding:10px 22px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;">Fechar e recarregar</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 </div>
 
