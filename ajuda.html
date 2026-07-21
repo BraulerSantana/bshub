@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central de Ajuda · BSHub</title>
+<meta name="description" content="Manual completo do BSHub — controle das obrigações e tarefas de todo o seu escritório de contabilidade: fiscal, contábil e departamento pessoal.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --navy-900:#0f172a; --navy-800:#1e293b;
+    --brand-700:#1e40af; --brand-600:#1d4ed8; --brand-500:#2563eb; --brand-400:#3b82f6;
+    --ink:#0f172a; --text:#334155; --text-2:#64748b; --text-3:#94a3b8;
+    --bg:#f6f8fc; --card:#ffffff; --border:#e5eaf1; --border-2:#eef2f7;
+    --amber:#f59e0b; --amber-bg:#fffbeb; --amber-bd:#fde68a;
+    --green:#16a34a; --green-bg:#f0fdf4; --green-bd:#bbf7d0;
+    --red:#dc2626; --red-bg:#fef2f2; --red-bd:#fecaca;
+    --violet:#7c3aed; --violet-bg:#f5f3ff; --violet-bd:#ddd6fe;
+    --sb-w:288px;
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--brand-400);color:#fff}
+
+  /* ============ HERO ============ */
+  .hero{
+    position:relative;overflow:hidden;color:#fff;
+    background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 55%,#2563eb 100%);
+    padding:48px 32px 116px;
+  }
+  .hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(60px);opacity:.55;pointer-events:none}
+  .hero::before{width:380px;height:380px;background:#3b82f6;top:-120px;right:-60px;animation:float 14s ease-in-out infinite}
+  .hero::after{width:300px;height:300px;background:#1e40af;bottom:-140px;left:-40px;animation:float 18s ease-in-out infinite reverse}
+  @keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(24px,-24px)}}
+  .hero-inner{position:relative;max-width:1160px;margin:0 auto;z-index:2}
+  .hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:56px;align-items:center}
+  .hero-copy{min-width:0}
+  .hero-brand{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+  .hero-logo{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);display:grid;place-items:center;backdrop-filter:blur(6px)}
+  .hero-logo svg{width:22px;height:22px;stroke:#fff}
+  .hero-wordmark{font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .hero-wordmark span{color:#bfdbfe}
+  .hero-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#bfdbfe;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);padding:6px 13px;border-radius:99px;margin-bottom:16px}
+  .hero-eyebrow svg{width:14px;height:14px}
+  .hero h1{font-size:clamp(30px,4.4vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:12px}
+  .hero p{font-size:clamp(15px,1.7vw,17.5px);color:#dbeafe;max-width:520px;margin-bottom:26px}
+  .hero p strong{color:#fff;font-weight:700}
+  .search-wrap{position:relative;max-width:560px}
+
+  /* Cartão de atalhos à direita do hero */
+  .hero-card{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:18px;padding:22px;backdrop-filter:blur(10px);box-shadow:0 20px 50px rgba(15,23,42,.22)}
+  .hero-card-label{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#bfdbfe;margin-bottom:14px}
+  .hero-card-label svg{width:15px;height:15px;stroke:#bfdbfe}
+  .qlink{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:11px;font-size:14px;font-weight:500;color:#eff6ff;cursor:pointer;transition:background .15s,transform .15s;border:1px solid transparent}
+  .qlink svg{width:17px;height:17px;stroke:#bfdbfe;flex:0 0 auto;transition:stroke .15s}
+  .qlink .arw{margin-left:auto;width:15px;height:15px;stroke:rgba(255,255,255,.4)}
+  .qlink:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.14);transform:translateX(2px)}
+  .qlink:hover svg{stroke:#fff}
+  .search-wrap svg.ico{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:20px;height:20px;stroke:var(--text-3);pointer-events:none}
+  #search{width:100%;padding:16px 18px 16px 50px;border-radius:14px;border:0;font-size:15.5px;font-family:inherit;color:var(--ink);box-shadow:0 12px 40px rgba(15,23,42,.28);outline:none}
+  #search::placeholder{color:var(--text-3)}
+  .search-hint{position:absolute;right:14px;top:50%;transform:translateY(-50%);display:flex;gap:5px}
+  kbd{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text-2);background:var(--bg);border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:2px 7px;line-height:1.4;white-space:nowrap}
+
+  /* ============ LAYOUT ============ */
+  .shell{max-width:1160px;margin:-72px auto 0;padding:0 24px 80px;position:relative;z-index:3;display:grid;grid-template-columns:var(--sb-w) 1fr;gap:32px;align-items:start}
+
+  /* Sidebar */
+  .sidebar{position:sticky;top:20px;background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:0 8px 30px rgba(15,23,42,.06);max-height:calc(100vh - 40px);overflow-y:auto}
+  .sidebar::-webkit-scrollbar{width:8px}
+  .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+  .nav-group-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);padding:12px 12px 6px}
+  .nav-link{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;font-size:14px;font-weight:500;color:var(--text-2);transition:background .15s,color .15s;cursor:pointer}
+  .nav-link svg{width:17px;height:17px;flex:0 0 auto;stroke-width:2}
+  .nav-link:hover{background:var(--bg);color:var(--ink)}
+  .nav-link.active{background:linear-gradient(135deg,var(--brand-600),var(--brand-700));color:#fff;box-shadow:0 4px 12px rgba(29,78,216,.28)}
+  .nav-link.active svg{stroke:#fff}
+  .nav-link.admin-only::after{content:"admin";margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--violet);background:var(--violet-bg);border:1px solid var(--violet-bd);padding:1px 6px;border-radius:99px}
+  .nav-link.active.admin-only::after{color:#fff;background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.3)}
+
+  /* Content */
+  .content{min-width:0}
+  .section{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:34px 36px;margin-bottom:22px;box-shadow:0 4px 20px rgba(15,23,42,.04);scroll-margin-top:20px}
+  .section-head{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .section-icon{width:44px;height:44px;flex:0 0 auto;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #dbeafe}
+  .section-icon svg{width:22px;height:22px;stroke:var(--brand-600);stroke-width:2}
+  .section h2{font-size:23px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  .section-sub{color:var(--text-2);font-size:14.5px;margin-bottom:22px;padding-left:58px}
+  .section h3{font-size:16px;font-weight:700;color:var(--ink);margin:26px 0 10px}
+  .section h3:first-of-type{margin-top:6px}
+  .section p{margin-bottom:12px;font-size:15px}
+  .section p.lead{font-size:15.5px;color:var(--text)}
+  .section strong{color:var(--ink);font-weight:600}
+
+  /* Steps */
+  ol.steps{list-style:none;counter-reset:s;margin:14px 0 6px}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 16px 44px;font-size:14.5px}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:-2px;width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--brand-600),var(--brand-700));color:#fff;font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;display:grid;place-items:center;box-shadow:0 3px 8px rgba(29,78,216,.25)}
+  ol.steps>li:not(:last-child)::after{content:"";position:absolute;left:13px;top:30px;bottom:2px;width:2px;background:var(--border)}
+  ul.bullets{list-style:none;margin:10px 0}
+  ul.bullets>li{position:relative;padding:5px 0 5px 24px;font-size:14.5px}
+  ul.bullets>li::before{content:"";position:absolute;left:4px;top:13px;width:6px;height:6px;border-radius:50%;background:var(--brand-500)}
+
+  /* UI reference chips */
+  .ui{font-family:'Inter';font-weight:600;font-size:13px;color:var(--brand-700);background:#eff6ff;border:1px solid #dbeafe;padding:2px 9px;border-radius:7px;white-space:nowrap;display:inline-block;line-height:1.5}
+  code{font-family:'JetBrains Mono',monospace;font-size:13px;color:#be185d;background:#fdf2f8;border:1px solid #fbcfe8;padding:1px 6px;border-radius:6px}
+
+  /* Callouts */
+  .callout{display:flex;gap:13px;padding:15px 17px;border-radius:12px;margin:18px 0;font-size:14px;line-height:1.55}
+  .callout svg{width:19px;height:19px;flex:0 0 auto;margin-top:1px}
+  .callout .ct{font-weight:700;display:block;margin-bottom:2px;font-size:13.5px}
+  .callout.tip{background:var(--amber-bg);border:1px solid var(--amber-bd)}
+  .callout.tip svg{stroke:var(--amber)} .callout.tip .ct{color:#b45309}
+  .callout.warn{background:var(--red-bg);border:1px solid var(--red-bd)}
+  .callout.warn svg{stroke:var(--red)} .callout.warn .ct{color:#b91c1c}
+  .callout.ok{background:var(--green-bg);border:1px solid var(--green-bd)}
+  .callout.ok svg{stroke:var(--green)} .callout.ok .ct{color:#15803d}
+  .callout.adm{background:var(--violet-bg);border:1px solid var(--violet-bd)}
+  .callout.adm svg{stroke:var(--violet)} .callout.adm .ct{color:#6d28d9}
+
+  .admin-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--violet);background:var(--violet-bg);border:1px solid var(--violet-bd);padding:3px 9px;border-radius:99px;vertical-align:middle;margin-left:8px}
+  .admin-badge svg{width:12px;height:12px}
+
+  /* Search empty state */
+  #noresults{display:none;text-align:center;padding:60px 20px;color:var(--text-2)}
+  #noresults svg{width:40px;height:40px;stroke:var(--text-3);margin-bottom:14px}
+  #noresults b{color:var(--ink)}
+  mark{background:#fef08a;color:inherit;border-radius:3px;padding:0 1px}
+
+  /* Footer */
+  .foot{max-width:1160px;margin:0 auto;padding:34px 24px 60px;text-align:center;color:var(--text-3);font-size:13px}
+  .seals{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+  .seal{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--text-2);background:var(--card);border:1px solid var(--border);padding:8px 14px;border-radius:99px}
+  .seal svg{width:15px;height:15px;stroke:var(--brand-600)}
+
+  /* Mobile topbar */
+  .topbar{display:none;position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:11px 16px;align-items:center;gap:12px}
+  .topbar .mb-logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--brand-600),var(--brand-700));display:grid;place-items:center}
+  .topbar .mb-logo svg{width:17px;height:17px;stroke:#fff}
+  .topbar b{font-size:15px;color:var(--ink);font-weight:800}
+  .topbar b span{color:var(--brand-600)}
+  .menu-btn{margin-left:auto;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);display:grid;place-items:center;cursor:pointer}
+  .menu-btn svg{width:20px;height:20px;stroke:var(--ink)}
+  .backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:44}
+
+  @media(max-width:940px){
+    .hero{padding:36px 20px 108px}
+    .hero-grid{grid-template-columns:1fr;gap:0}
+    .hero-card{display:none}
+    .hero-brand{margin-bottom:24px}
+    .topbar{display:flex}
+    .shell{grid-template-columns:1fr;margin-top:-64px;padding:0 16px 60px}
+    .sidebar{position:fixed;top:0;left:0;bottom:0;width:280px;max-height:100vh;border-radius:0 18px 18px 0;transform:translateX(-105%);transition:transform .25s ease;z-index:45;box-shadow:0 20px 60px rgba(15,23,42,.3)}
+    .sidebar.open{transform:translateX(0)}
+    .backdrop.open{display:block}
+    .section{padding:26px 22px}
+    .section-sub{padding-left:0}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<!-- MOBILE TOPBAR -->
+<div class="topbar">
+  <div class="mb-logo"><i data-lucide="layout-grid"></i></div>
+  <b>BS<span>Hub</span> · Ajuda</b>
+  <button class="menu-btn" id="menuBtn" aria-label="Abrir menu"><i data-lucide="menu"></i></button>
+</div>
+<div class="backdrop" id="backdrop"></div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="hero-brand">
+          <div class="hero-logo"><i data-lucide="layout-grid"></i></div>
+          <div class="hero-wordmark">BS<span>Hub</span></div>
+        </div>
+        <span class="hero-eyebrow"><i data-lucide="book-open"></i> Central de Ajuda</span>
+        <h1>Tudo o que o seu escritório precisa saber sobre o BSHub</h1>
+        <p>Controle das obrigações e tarefas de <strong>todo o escritório de contabilidade</strong> — fiscal, contábil e departamento pessoal. Encontre em segundos como fazer cada rotina.</p>
+        <div class="search-wrap">
+          <i data-lucide="search" class="ico"></i>
+          <input id="search" type="text" placeholder="Buscar na ajuda (ex.: Simples Nacional, marcar entrega, convidar colaborador)" autocomplete="off">
+          <span class="search-hint"><kbd>/</kbd></span>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-label"><i data-lucide="zap"></i> Atalhos rápidos</div>
+        <a class="qlink" data-target="entregas"><i data-lucide="check-circle-2"></i> Marcar uma entrega <i data-lucide="arrow-right" class="arw"></i></a>
+        <a class="qlink" data-target="equipe"><i data-lucide="user-plus"></i> Convidar colaborador <i data-lucide="arrow-right" class="arw"></i></a>
+        <a class="qlink" data-target="rotinas"><i data-lucide="repeat"></i> Virada de mês <i data-lucide="arrow-right" class="arw"></i></a>
+        <a class="qlink" data-target="backup"><i data-lucide="download"></i> Exportar planilha <i data-lucide="arrow-right" class="arw"></i></a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="nav-group-label">Começando</div>
+    <a class="nav-link" data-target="acesso"><i data-lucide="log-in"></i> Primeiro acesso</a>
+    <a class="nav-link" data-target="painel"><i data-lucide="layout-dashboard"></i> Visão geral do painel</a>
+    <div class="nav-group-label">Rotina do dia a dia</div>
+    <a class="nav-link" data-target="empresas"><i data-lucide="building-2"></i> Empresas e grupos</a>
+    <a class="nav-link" data-target="rotinas"><i data-lucide="repeat"></i> Rotinas mensais</a>
+    <a class="nav-link" data-target="entregas"><i data-lucide="check-circle-2"></i> Entregas e obrigações</a>
+    <a class="nav-link" data-target="subtarefas"><i data-lucide="list-checks"></i> Subtarefas</a>
+    <a class="nav-link" data-target="anual"><i data-lucide="calendar-days"></i> Painel anual</a>
+    <div class="nav-group-label">Gestão do escritório</div>
+    <a class="nav-link admin-only" data-target="financeiro"><i data-lucide="wallet"></i> Financeiro</a>
+    <a class="nav-link admin-only" data-target="equipe"><i data-lucide="users"></i> Equipe</a>
+    <a class="nav-link admin-only" data-target="escritorios"><i data-lucide="briefcase"></i> Escritórios</a>
+    <a class="nav-link" data-target="relatorio"><i data-lucide="file-bar-chart"></i> Relatório mensal</a>
+    <a class="nav-link" data-target="backup"><i data-lucide="download"></i> Backup e exportação</a>
+    <div class="nav-group-label">Suporte</div>
+    <a class="nav-link" data-target="faq"><i data-lucide="life-buoy"></i> Dúvidas e problemas</a>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- ACESSO -->
+    <section class="section" id="acesso">
+      <div class="section-head"><div class="section-icon"><i data-lucide="log-in"></i></div><h2>Primeiro acesso</h2></div>
+      <p class="section-sub">Como entrar no BSHub e criar sua senha quando você é convidado.</p>
+
+      <p class="lead">O BSHub é acessado pelo endereço <code>app.bshub.com.br</code>, direto do navegador — não precisa instalar nada. Funciona no computador, no tablet e no celular.</p>
+
+      <h3>Entrando pela primeira vez</h3>
+      <p>Quando o administrador do escritório cadastra você, chega um <strong>e-mail de convite</strong> com um botão para criar sua senha. Esse é o único caminho de entrada: o BSHub não tem cadastro público aberto.</p>
+      <ol class="steps">
+        <li>Abra o e-mail de convite e clique em <span class="ui">Criar minha senha</span>.</li>
+        <li>Defina uma senha e confirme. A tela de criação aparece automaticamente pelo link do convite.</li>
+        <li>Você é levado direto ao painel, já dentro do seu escritório.</li>
+      </ol>
+
+      <h3>Login no dia a dia</h3>
+      <ul class="bullets">
+        <li>Informe e-mail e senha e clique em <span class="ui">Entrar</span>.</li>
+        <li>Marque <span class="ui">Manter conectado</span> para não precisar logar toda vez no mesmo dispositivo.</li>
+        <li>Esqueceu a senha? Clique em <span class="ui">Esqueci a senha</span> e siga o link enviado por e-mail.</li>
+      </ul>
+
+      <div class="callout tip"><i data-lucide="lightbulb"></i><div><span class="ct">Dica</span>O convite chega do domínio <code>bshub.com.br</code>. Se não achar, confira a caixa de spam ou promoções.</div></div>
+      <div class="callout warn"><i data-lucide="shield-alert"></i><div><span class="ct">Acesso desativado</span>Se um colaborador foi desativado pelo administrador, o login é bloqueado na entrada. Peça a reativação a quem administra o escritório.</div></div>
+    </section>
+
+    <!-- PAINEL -->
+    <section class="section" id="painel">
+      <div class="section-head"><div class="section-icon"><i data-lucide="layout-dashboard"></i></div><h2>Visão geral do painel</h2></div>
+      <p class="section-sub">O que você vê ao entrar e como o BSHub organiza o trabalho do escritório.</p>
+
+      <div class="callout adm"><i data-lucide="layers"></i><div><span class="ct">Um só painel para o escritório inteiro</span>O BSHub controla <strong>todo o fluxo mensal</strong> — não só a folha. Obrigações fiscais (Simples Nacional, SPED, ICMS), contábeis e de departamento pessoal ficam no mesmo lugar, com o mesmo controle.</div></div>
+
+      <p class="lead">O painel mostra, em tempo real, o andamento de todas as obrigações e tarefas do mês corrente. Tudo é sincronizado na nuvem: o que um colega marca aparece para os demais na mesma hora.</p>
+
+      <h3>Andamento em tempo real</h3>
+      <p>A qualquer momento você tem em mãos o <strong>andamento de cada tarefa</strong> e do trabalho de cada colaborador — o que já foi entregue, o que está pendente e o que está atrasado. É a visão que o responsável precisa para conduzir o fechamento sem cobrar um por um.</p>
+
+      <h3>As abas (grupos)</h3>
+      <p>As empresas ficam organizadas em <strong>grupos</strong>, que aparecem como abas no topo. Uma mesma empresa pode estar em mais de um grupo ao mesmo tempo. Cada aba mostra um contador com quantas empresas ela tem.</p>
+
+      <h3>O gráfico de rosca</h3>
+      <p>No topo do painel, o gráfico de rosca resume visualmente o progresso das entregas por grupo — verde para o que já foi concluído, o restante para o que ainda está pendente. É o termômetro rápido do fechamento.</p>
+
+      <h3>Cartões de empresa</h3>
+      <p>Cada empresa é um cartão. Nele você vê as rotinas do mês, marca o que foi entregue, abre as subtarefas e acessa a ficha completa para editar dados ou consultar o histórico.</p>
+
+      <div class="callout tip"><i data-lucide="lightbulb"></i><div><span class="ct">Alternar tema</span>Use o botão de tema no cabeçalho para trocar entre modo claro e escuro, conforme sua preferência.</div></div>
+    </section>
+
+    <!-- EMPRESAS -->
+    <section class="section" id="empresas">
+      <div class="section-head"><div class="section-icon"><i data-lucide="building-2"></i></div><h2>Empresas e grupos</h2></div>
+      <p class="section-sub">Cadastrar clientes, organizá-los em grupos e manter a base sempre limpa.</p>
+
+      <h3>Cadastrar uma empresa</h3>
+      <ol class="steps">
+        <li>Clique em <span class="ui">Nova empresa</span>.</li>
+        <li>Preencha o nome e selecione quais rotinas mensais a empresa usa — as de DP que já vêm prontas (Folha, INSS, FGTS, Consignado, Horas) e as que você criou (DAS, DCTFWeb, EFD-REINF, PIS, COFINS, IRPJ, CSLL, ICMS, ISS e outras).</li>
+        <li>Escolha um ou mais grupos onde ela deve aparecer.</li>
+        <li>Se quiser, informe o honorário e uma observação permanente. Salve.</li>
+      </ol>
+
+      <h3>Grupos: uma empresa em vários lugares</h3>
+      <p>Grupos são as abas que organizam a carteira — por responsável, por regime, por cidade, do jeito que fizer sentido para o escritório. Como o vínculo é flexível, a mesma empresa pode aparecer em quantos grupos você precisar, sem duplicar o cadastro.</p>
+
+      <h3>Observações da empresa</h3>
+      <p>A ficha de cada empresa tem um campo de <strong>observação permanente</strong> — ideal para lembretes que valem todo mês (particularidades do cliente, contatos, senhas de portais que você anota à parte). Ela fica sempre visível ao abrir a empresa.</p>
+
+      <h3>Inativar em vez de excluir</h3>
+      <p>Quando um cliente sai, o BSHub <strong>inativa</strong> a empresa em vez de apagá-la. Assim o histórico é preservado e nada se perde. Se o cliente voltar, basta reativar — e todos os vínculos com grupos são restaurados exatamente como estavam.</p>
+      <div class="callout ok"><i data-lucide="shield-check"></i><div><span class="ct">Nada é perdido por engano</span>A exclusão pede confirmação e é sempre reversível. O histórico da empresa continua consultável mesmo depois de inativada.</div></div>
+    </section>
+
+    <!-- ROTINAS -->
+    <section class="section" id="rotinas">
+      <div class="section-head"><div class="section-icon"><i data-lucide="repeat"></i></div><h2>Rotinas mensais</h2></div>
+      <p class="section-sub">Toda obrigação recorrente do escritório — fiscal, contábil ou de pessoal — organizada mês a mês.</p>
+
+      <p class="lead">No BSHub, cada obrigação que se repete vira uma <strong>rotina</strong>. Você acompanha o fluxo mensal inteiro do escritório em um só lugar, seja qual for a área.</p>
+
+      <h3>Fiscal e contábil</h3>
+      <ul class="bullets">
+        <li><strong>DAS</strong> — guia mensal do Simples Nacional.</li>
+        <li><strong>DCTFWeb</strong> — declaração de débitos e créditos tributários federais.</li>
+        <li><strong>EFD-REINF</strong> — retenções e informações da contribuição previdenciária.</li>
+        <li><strong>PIS e COFINS</strong> — contribuições federais sobre o faturamento.</li>
+        <li><strong>IRPJ e CSLL</strong> — imposto de renda e contribuição social sobre o lucro.</li>
+        <li><strong>ICMS</strong> — imposto estadual sobre circulação de mercadorias.</li>
+        <li><strong>ISS</strong> — imposto municipal sobre serviços.</li>
+        <li><strong>SPED Contábil (ECD)</strong> — escrituração contábil digital.</li>
+        <li><strong>SPED ICMS (EFD)</strong> — escrituração fiscal digital de ICMS.</li>
+      </ul>
+
+      <h3>Departamento pessoal</h3>
+      <p>Cinco rotinas de DP já vêm prontas ao criar o escritório, sem configuração:</p>
+      <ul class="bullets">
+        <li><strong>Folha de Pagamento</strong> — fechamento da folha da competência.</li>
+        <li><strong>INSS</strong> — apuração e guia da contribuição previdenciária.</li>
+        <li><strong>FGTS</strong> — apuração e recolhimento do fundo de garantia.</li>
+        <li><strong>Consignado</strong> — controle dos descontos de empréstimo consignado.</li>
+        <li><strong>Horas</strong> — fechamento de ponto e banco de horas.</li>
+      </ul>
+
+      <h3>Rotinas personalizadas</h3>
+      <p>Além das de DP que já vêm prontas, você cria as rotinas que o seu escritório precisar — DAS, DCTFWeb, EFD-REINF, PIS, COFINS, IRPJ, CSLL, ICMS, ISS, SPED Contábil, SPED ICMS ou qualquer controle interno. Elas passam a valer para as empresas que você vincular e entram no fechamento mensal como qualquer outra.</p>
+
+      <h3>Virada de mês automática</h3>
+      <p>A recorrência é <strong>100% automática</strong>: ao entrar em um novo mês, o BSHub reabre as rotinas de cada empresa zeradas para a nova competência, sem você precisar fazer nada. O mês anterior fica guardado no histórico.</p>
+
+      <div class="callout tip"><i data-lucide="lightbulb"></i><div><span class="ct">Rotina que saiu de uso</span>Rotinas personalizadas também podem ser inativadas sem apagar o histórico — os vínculos com as empresas são preservados.</div></div>
+    </section>
+
+    <!-- ENTREGAS -->
+    <section class="section" id="entregas">
+      <div class="section-head"><div class="section-icon"><i data-lucide="check-circle-2"></i></div><h2>Entregas e obrigações</h2></div>
+      <p class="section-sub">Marcar o que já foi feito — o coração do controle diário.</p>
+
+      <h3>Marcar uma entrega</h3>
+      <p>No cartão da empresa, cada rotina tem uma marcação. Clique para dar como <strong>entregue</strong>; a marcação fica verde e o gráfico de rosca se atualiza na hora. Clique de novo para desmarcar, se precisar corrigir.</p>
+
+      <h3>Obrigações individuais</h3>
+      <p>Rotinas que se desdobram em várias obrigações mostram cada item separadamente. Marque uma por uma conforme conclui, ou use <span class="ui">Marcar todas</span> para fechar a rotina inteira de uma vez.</p>
+
+      <div class="callout ok"><i data-lucide="cloud"></i><div><span class="ct">Tudo na nuvem, na hora</span>Cada marcação é salva automaticamente na nuvem. Não existe botão de "salvar" — o que você marca já está gravado e visível para toda a equipe.</div></div>
+    </section>
+
+    <!-- SUBTAREFAS -->
+    <section class="section" id="subtarefas">
+      <div class="section-head"><div class="section-icon"><i data-lucide="list-checks"></i></div><h2>Subtarefas</h2></div>
+      <p class="section-sub">Checklists internos dentro de cada empresa.</p>
+
+      <p class="lead">Subtarefas são pequenos itens de controle que você cria dentro de uma empresa — aquele detalhe extra que não é uma rotina fixa, mas precisa ser acompanhado.</p>
+
+      <h3>O que dá para fazer</h3>
+      <ul class="bullets">
+        <li><strong>Criar</strong> uma subtarefa nova na empresa.</li>
+        <li><strong>Marcar concluída</strong> conforme você avança.</li>
+        <li><strong>Editar</strong> o texto quando precisar ajustar.</li>
+        <li><strong>Fixar</strong> as que se repetem todo mês, para que reapareçam automaticamente.</li>
+        <li><strong>Excluir</strong> as que não servem mais.</li>
+      </ul>
+
+      <h3>Fixar para repetir</h3>
+      <p>Uma subtarefa <strong>fixada</strong> volta a aparecer a cada competência, já zerada — perfeita para conferências que fazem parte do fechamento de todo mês. As não fixadas valem só para o mês em que foram criadas.</p>
+    </section>
+
+    <!-- ANUAL -->
+    <section class="section" id="anual">
+      <div class="section-head"><div class="section-icon"><i data-lucide="calendar-days"></i></div><h2>Painel anual</h2></div>
+      <p class="section-sub">As obrigações que acontecem uma vez por ano.</p>
+
+      <p class="lead">Nem tudo é mensal. O painel anual concentra as obrigações de periodicidade anual — do 13º e demais eventos de DP à DEFIS — separadas da rotina do mês.</p>
+      <ul class="bullets">
+        <li>Acompanhe o andamento de cada obrigação anual por empresa.</li>
+        <li>Desdobre em subitens quando a obrigação tiver etapas.</li>
+        <li>Marque o status de cada etapa, do mesmo jeito das rotinas mensais.</li>
+      </ul>
+      <div class="callout tip"><i data-lucide="lightbulb"></i><div><span class="ct">Onde encontrar</span>Abra o painel anual pelo botão correspondente no cabeçalho para ver a visão do ano separada da rotina mensal.</div></div>
+    </section>
+
+    <!-- FINANCEIRO -->
+    <section class="section" id="financeiro">
+      <div class="section-head"><div class="section-icon"><i data-lucide="wallet"></i></div><h2>Financeiro <span class="admin-badge"><i data-lucide="lock"></i> Só administrador</span></h2></div>
+      <p class="section-sub">Honorários e baixas — visível apenas para quem administra o escritório.</p>
+
+      <div class="callout adm"><i data-lucide="lock"></i><div><span class="ct">Acesso restrito</span>O módulo financeiro é exclusivo do administrador. Colaboradores não veem nem os valores nem as baixas, por definição do sistema.</div></div>
+
+      <h3>Honorários</h3>
+      <p>Cada empresa pode ter o valor do <strong>honorário</strong> registrado na sua ficha. Esse valor alimenta o controle financeiro do escritório e serve de base para o acompanhamento de recebimentos.</p>
+
+      <h3>Baixas</h3>
+      <p>Registre uma <strong>baixa</strong> quando o honorário for recebido. Informe a data no formato <code>DD/MM/AAAA</code> — o BSHub cuida da conversão para guardar corretamente. As baixas ficam com trilha de auditoria: dá para saber o que foi lançado e quando.</p>
+    </section>
+
+    <!-- EQUIPE -->
+    <section class="section" id="equipe">
+      <div class="section-head"><div class="section-icon"><i data-lucide="users"></i></div><h2>Equipe <span class="admin-badge"><i data-lucide="lock"></i> Só administrador</span></h2></div>
+      <p class="section-sub">Convidar colaboradores e definir o que cada um enxerga.</p>
+
+      <p class="lead">No painel <span class="ui">👥 Equipe</span>, o administrador gerencia quem tem acesso ao escritório e com quais permissões.</p>
+
+      <h3>Convidar um colaborador</h3>
+      <ol class="steps">
+        <li>Abra <span class="ui">👥 Equipe</span> e clique em convidar.</li>
+        <li>Informe o e-mail da pessoa. Ela recebe um convite para criar a própria senha.</li>
+        <li>Selecione os grupos que ela poderá acessar.</li>
+      </ol>
+
+      <h3>Permissões por grupo</h3>
+      <p>O acesso do colaborador é <strong>restrito aos grupos que você atribuir</strong>. Ele só vê e edita as empresas desses grupos — e nunca enxerga o módulo financeiro. Assim cada pessoa trabalha apenas na sua carteira.</p>
+
+      <h3>Ativar e desativar</h3>
+      <p>Pode ativar ou desativar um colaborador a qualquer momento. Ao desativar, o login dele é bloqueado imediatamente, sem perder nenhum registro do que já foi feito.</p>
+
+      <div class="callout tip"><i data-lucide="activity"></i><div><span class="ct">Acompanhe o trabalho da equipe</span>Como cada marcação é registrada na nuvem em tempo real, o responsável vê o andamento das tarefas de cada colaborador direto no painel — quem está em dia e o que ainda falta, sem precisar perguntar.</div></div>
+
+      <div class="callout ok"><i data-lucide="shield-check"></i><div><span class="ct">Separação garantida no servidor</span>A restrição por grupo não é só visual: o próprio banco de dados impede que um colaborador acesse empresas fora dos grupos dele.</div></div>
+    </section>
+
+    <!-- ESCRITÓRIOS -->
+    <section class="section" id="escritorios">
+      <div class="section-head"><div class="section-icon"><i data-lucide="briefcase"></i></div><h2>Escritórios <span class="admin-badge"><i data-lucide="crown"></i> Super-admin</span></h2></div>
+      <p class="section-sub">A visão geral de todos os escritórios — exclusiva do super-administrador.</p>
+
+      <div class="callout adm"><i data-lucide="crown"></i><div><span class="ct">Painel do super-admin</span>Esta área só aparece para o super-administrador do BSHub. Um administrador comum de escritório não a enxerga.</div></div>
+
+      <p class="lead">No painel <span class="ui">🏢 Escritórios</span> ficam a gestão de todos os escritórios clientes e o acompanhamento da receita.</p>
+      <ul class="bullets">
+        <li><strong>Convidar um novo escritório</strong> — cria o escritório e o seu primeiro administrador em um passo.</li>
+        <li><strong>Suspender ou reativar</strong> — o login é bloqueado para escritórios suspensos ou vencidos.</li>
+        <li><strong>Painel de receita (MRR)</strong> — receita prevista, escritórios pagantes, em piloto e os que vencem nos próximos 7 dias.</li>
+      </ul>
+    </section>
+
+    <!-- RELATÓRIO -->
+    <section class="section" id="relatorio">
+      <div class="section-head"><div class="section-icon"><i data-lucide="file-bar-chart"></i></div><h2>Relatório mensal</h2></div>
+      <p class="section-sub">Um resumo do fechamento do escritório no mês.</p>
+      <p class="lead">O relatório mensal consolida o andamento das entregas da competência — uma visão de conjunto para conferir o que está pronto e o que ainda falta antes de fechar o mês. Bom para a reunião de equipe e para o acompanhamento do próprio administrador.</p>
+    </section>
+
+    <!-- BACKUP -->
+    <section class="section" id="backup">
+      <div class="section-head"><div class="section-icon"><i data-lucide="download"></i></div><h2>Backup e exportação</h2></div>
+      <p class="section-sub">Levar seus dados para fora do sistema quando precisar.</p>
+
+      <p class="lead">Seus dados já ficam seguros na nuvem, com sincronização automática. Ainda assim, você pode exportar quando quiser.</p>
+
+      <h3>Exportar planilha (CSV)</h3>
+      <ol class="steps">
+        <li>Abra a opção de backup e escolha <span class="ui">Baixar CSV</span>.</li>
+        <li>Filtre por grupo, se quiser exportar só uma parte da carteira.</li>
+        <li>Escolha se quer incluir empresas inativas e confirme.</li>
+      </ol>
+      <p>O arquivo abre direto no Excel ou no Google Sheets.</p>
+
+      <h3>Cópia completa (JSON)</h3>
+      <p>Para uma cópia técnica de tudo, use a exportação em <code>.json</code>. É útil como backup pontual ou para levar os dados a outro sistema.</p>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="section-head"><div class="section-icon"><i data-lucide="life-buoy"></i></div><h2>Dúvidas e problemas</h2></div>
+      <p class="section-sub">Soluções rápidas para as situações mais comuns.</p>
+
+      <h3>Fiz uma alteração e ela não apareceu</h3>
+      <p>Quase sempre é o navegador mostrando uma versão antiga guardada em cache. Force a atualização com <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd> (no Mac, <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>). A tela recarrega já com a versão nova.</p>
+
+      <h3>Um colaborador não consegue entrar</h3>
+      <p>Verifique no painel <span class="ui">👥 Equipe</span> se o acesso dele está <strong>ativo</strong>. Colaboradores desativados têm o login bloqueado. Se estiver ativo e mesmo assim não entrar, peça para ele usar <span class="ui">Esqueci a senha</span>.</p>
+
+      <h3>Um colaborador não vê nenhuma empresa</h3>
+      <p>O acesso é por grupo. Confira em <span class="ui">👥 Equipe</span> se ele está vinculado a pelo menos um grupo com empresas. Sem grupo atribuído, a tela dele fica vazia por segurança.</p>
+
+      <h3>O convite não chegou</h3>
+      <p>Olhe as pastas de spam e promoções. O convite vem do domínio <code>bshub.com.br</code>. Se não aparecer, o administrador pode reenviar pelo painel de equipe.</p>
+
+      <div class="callout tip"><i data-lucide="mail"></i><div><span class="ct">Precisa de ajuda humana?</span>Se nada acima resolver, fale com o suporte do BSHub pelo canal de atendimento do seu escritório.</div></div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="foot">
+  <div class="seals">
+    <span class="seal"><i data-lucide="shield-check"></i> 100% conforme a LGPD</span>
+    <span class="seal"><i data-lucide="check-circle-2"></i> 100% controle das rotinas</span>
+  </div>
+  <div>BSHub · Central de Ajuda — versão 1.0 · Julho de 2026</div>
+</footer>
+
+<script>
+  lucide.createIcons();
+
+  // ---- Navegação lateral: rolagem + destaque ativo ----
+  const links = Array.from(document.querySelectorAll('.nav-link'));
+  const sections = links.map(l => document.getElementById(l.dataset.target)).filter(Boolean);
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('backdrop');
+
+  function closeMenu(){ sidebar.classList.remove('open'); backdrop.classList.remove('open'); }
+
+  links.forEach(l => l.addEventListener('click', () => {
+    const el = document.getElementById(l.dataset.target);
+    if(el){ el.scrollIntoView({behavior:'smooth', block:'start'}); }
+    closeMenu();
+  }));
+
+  // Atalhos rápidos do hero
+  document.querySelectorAll('.qlink').forEach(q => q.addEventListener('click', () => {
+    const el = document.getElementById(q.dataset.target);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  }));
+
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        const id = e.target.id;
+        links.forEach(l => l.classList.toggle('active', l.dataset.target === id));
+      }
+    });
+  }, {rootMargin:'-45% 0px -50% 0px', threshold:0});
+  sections.forEach(s => spy.observe(s));
+
+  // ---- Menu mobile ----
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    sidebar.classList.toggle('open'); backdrop.classList.toggle('open');
+  });
+  backdrop.addEventListener('click', closeMenu);
+
+  // ---- Busca instantânea ----
+  const search = document.getElementById('search');
+  const allSections = Array.from(document.querySelectorAll('.section'));
+  const noresults = document.createElement('div');
+  noresults.id = 'noresults';
+  noresults.innerHTML = '<i data-lucide="search-x"></i><p>Nada encontrado para <b class="q"></b>.<br>Tente outro termo ou navegue pelo menu ao lado.</p>';
+  document.querySelector('.content').appendChild(noresults);
+  lucide.createIcons();
+
+  function clearMarks(root){
+    root.querySelectorAll('mark').forEach(m => { m.replaceWith(document.createTextNode(m.textContent)); });
+    root.normalize();
+  }
+  function highlight(root, term){
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => n.nodeValue.trim() && !['SCRIPT','STYLE','MARK'].includes(n.parentNode.nodeName)
+        ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+    });
+    const re = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')','gi');
+    const nodes = []; while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      if(re.test(node.nodeValue)){
+        const span = document.createElement('span');
+        span.innerHTML = node.nodeValue.replace(re,'<mark>$1</mark>');
+        node.replaceWith(span);
+      }
+    });
+  }
+  function norm(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+
+  let t;
+  search.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      const raw = search.value.trim();
+      const q = norm(raw);
+      allSections.forEach(clearMarks);
+      let visible = 0;
+      allSections.forEach(sec => {
+        const match = !q || norm(sec.textContent).includes(q);
+        sec.style.display = match ? '' : 'none';
+        if(match && q){ highlight(sec, raw); visible++; }
+        else if(match){ visible++; }
+      });
+      lucide.createIcons();
+      const empty = q && visible === 0;
+      noresults.style.display = empty ? 'block' : 'none';
+      if(empty) noresults.querySelector('.q').textContent = raw;
+    }, 120);
+  });
+
+  // Atalho "/" foca a busca
+  document.addEventListener('keydown', e => {
+    if(e.key === '/' && document.activeElement !== search){ e.preventDefault(); search.focus(); }
+    if(e.key === 'Escape' && document.activeElement === search){ search.value=''; search.dispatchEvent(new Event('input')); search.blur(); }
+  });
+</script>
+</body>
+</html>
