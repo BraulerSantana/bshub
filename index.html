@@ -3158,8 +3158,10 @@ function getClienteGruposLabel(c){
   return gs.join(' · ');
 }
 function getRotinasByCliente(c){
-  // Todas as rotinas ativas cadastradas na empresa
-  const todasDaEmpresa = state.rotinas.filter(r=>{
+  const donoDaAba = state.grupoDono?.[currentGrupo] || usuarioAtual?.id;
+  const vinculos = state.colabRotinasVinculos || new Set();
+  // Rotinas cadastradas na empresa (comportamento antigo — quando NÃO há vínculos pessoais)
+  const rotinasDaEmpresa = state.rotinas.filter(r=>{
     if(r.id==='folha')return c.folha;
     if(r.id==='inss')return c.inss;
     if(r.id==='fgts')return c.fgts;
@@ -3167,13 +3169,15 @@ function getRotinasByCliente(c){
     if(r.id==='horas')return c.horas;
     return c.rotinas&&c.rotinas.includes(r.id);
   });
-  // Determina o "dono" da visualização atual:
-  //   - Se a aba corrente tem dono (colaborador): dono = aquele colaborador
-  //   - Se a aba não tem dono (grupo por assunto): dono = admin (usuário logado, que só admin acessa)
-  const donoDaAba = state.grupoDono?.[currentGrupo] || usuarioAtual?.id;
-  if(!donoDaAba)return todasDaEmpresa;
-  const vinculos=state.colabRotinasVinculos||new Set();
-  return todasDaEmpresa.filter(r=>vinculos.has(donoDaAba+'|'+c.id+'|'+r.id));
+  if(!donoDaAba)return rotinasDaEmpresa;
+  // Rotinas que o DONO DA ABA vinculou pessoalmente nessa empresa (vindas da tabela colaborador_rotinas)
+  const rotinasVinculadas = state.rotinas.filter(r=>vinculos.has(donoDaAba+'|'+c.id+'|'+r.id));
+  // Se o dono da aba já tem vínculos pessoais nesta empresa,
+  // o vínculo pessoal MANDA MAIS que o cadastro da empresa.
+  if(rotinasVinculadas.length > 0) return rotinasVinculadas;
+  // Se ainda não tem nenhum vínculo pessoal, cai no comportamento antigo:
+  // mostra as rotinas cadastradas na empresa (para admin ter algo em modo padrão).
+  return rotinasDaEmpresa;
 }
 
 // Retorna TODAS as rotinas cadastradas na empresa (sem filtro por vínculo).
@@ -4670,16 +4674,19 @@ function buildRotinasCheck(c){
   const admin=isAdmin();
   let nomeDono='você';
   if(admin && state.grupoDono?.[currentGrupo]){
-    // Aba tem dono: procura nome do colaborador
     const colab=(state.colaboradores||[]).find(u=>u.id===donoDaAba);
     nomeDono = colab?.nome || 'colaborador';
   }
   const legenda = admin
     ? `<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(37,99,235,.08);border-left:3px solid var(--accent);border-radius:4px;">Marque as rotinas de <strong>${nomeDono}</strong> nesta empresa. Você está na aba "${currentGrupo}".</div>`
     : `<div style="font-size:11px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:rgba(37,99,235,.08);border-left:3px solid var(--accent);border-radius:4px;">Marque as rotinas que <strong>você vai acompanhar</strong> nesta empresa.</div>`;
+  // Mostra TODAS as rotinas ativas do escritório (não só as cadastradas na empresa)
+  // Assim admin pode atribuir qualquer rotina para o colaborador,
+  // e o vínculo pessoal MANDA MAIS que o cadastro da empresa (opção B).
   wrap.innerHTML=legenda+state.rotinas.map(r=>{
     let checked=false;
     if(c && donoDaAba){
+      // Rotina marcada = dono da aba já tem vínculo pessoal com ela nesta empresa
       checked = vinculos.has(donoDaAba+'|'+c.id+'|'+r.id);
     }else if(!c){
       // Empresa nova (só admin cria): sugere as principais como marcadas
@@ -4729,15 +4736,19 @@ async function saveEmpresa(){
   const admin=isAdmin();
 
   if(admin){
-    const folha=rotinaIdsMarcadas.includes('folha');
-    const inss=rotinaIdsMarcadas.includes('inss');
-    const fgts=rotinaIdsMarcadas.includes('fgts');
-    const consignado=rotinaIdsMarcadas.includes('consig');
-    const horas=rotinaIdsMarcadas.includes('horas');
-    const customRotinas=rotinaIdsMarcadas.filter(r=>!['folha','inss','fgts','consig','horas'].includes(r));
-    // 🔒 Preserva vínculos com rotinas INATIVAS (não aparecem como checkbox no modal,
-    // mas o vínculo é mantido para voltar intacto quando a rotina for reativada)
-    if(editingEmpresaId){
+    // Se está na aba de um colaborador, NÃO altera o cadastro da empresa —
+    // só grava vínculos pessoais para o dono da aba (feito no bloco final).
+    // Isso vale só para editar. Cadastrar empresa nova sempre usa os checkboxes.
+    const abaTemDono = !!state.grupoDono?.[currentGrupo];
+    const salvarCadastroRotinas = !abaTemDono || !editingEmpresaId;
+    const folha = salvarCadastroRotinas ? rotinaIdsMarcadas.includes('folha') : undefined;
+    const inss = salvarCadastroRotinas ? rotinaIdsMarcadas.includes('inss') : undefined;
+    const fgts = salvarCadastroRotinas ? rotinaIdsMarcadas.includes('fgts') : undefined;
+    const consignado = salvarCadastroRotinas ? rotinaIdsMarcadas.includes('consig') : undefined;
+    const horas = salvarCadastroRotinas ? rotinaIdsMarcadas.includes('horas') : undefined;
+    const customRotinas = salvarCadastroRotinas ? rotinaIdsMarcadas.filter(r=>!['folha','inss','fgts','consig','horas'].includes(r)) : undefined;
+    // 🔒 Preserva vínculos com rotinas INATIVAS (só quando salva cadastro)
+    if(salvarCadastroRotinas && editingEmpresaId){
       const _cliExistente=findCliente(editingEmpresaId);
       if(_cliExistente&&Array.isArray(_cliExistente.rotinas)){
         const _idsInativas=new Set((state.rotinasInativas||[]).map(x=>x.id));
@@ -4751,11 +4762,14 @@ async function saveEmpresa(){
       if(existingCliente){
         const honorario=_honInput;
         const vencDia=vencDiaOk;
-        const updated={...existingCliente,nome,doc,cod,whats,email,grupo,grupos,folha,inss,fgts,consignado,horas,rotinas:customRotinas,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario,vencDia};
+        // Se estamos na aba de um colaborador, PRESERVA os flags de rotina do cadastro atual da empresa
+        const updated = salvarCadastroRotinas
+          ? {...existingCliente,nome,doc,cod,whats,email,grupo,grupos,folha,inss,fgts,consignado,horas,rotinas:customRotinas,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario,vencDia}
+          : {...existingCliente,nome,doc,cod,whats,email,grupo,grupos,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario,vencDia};
         syncClienteGrupos(updated, grupos);
       }
       saveAnualFromModal(editingEmpresaId);
-      toast('Empresa atualizada!','success');
+      toast(abaTemDono ? 'Rotinas atribuídas ✅' : 'Empresa atualizada!','success');
     }else{
       const id='emp_'+Date.now();
       _ultimoIdCriado = id;
