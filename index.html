@@ -153,7 +153,16 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .ccard:nth-child(4){animation-delay:.12s;}
 .ccard:nth-child(5){animation-delay:.16s;}
 .ccard:hover{border-color:var(--border2);box-shadow:0 12px 40px rgba(0,0,0,.45);transform:translateY(-3px);}
-.ccard.inativo{opacity:.35;filter:grayscale(.4);}
+.ccard.inativo{opacity:.55;filter:grayscale(.35);}
+.ccard.inativo:hover{opacity:.85;filter:grayscale(0);}
+.aviso-inativa{display:flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(245,158,11,.16);
+  border-bottom:1px solid rgba(245,158,11,.3);font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#f59e0b;}
+.aviso-inativa svg{flex:none;stroke:#f59e0b;}
+.aviso-inativa span{flex:1;}
+.aviso-inativa button{background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.45);color:#f59e0b;
+  font-family:inherit;font-size:9px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:5px;
+  cursor:pointer;transition:all .18s;}
+.aviso-inativa button:hover{background:#f59e0b;color:#1a1a1a;}
 .ccard.entregue{border-color:rgba(34,197,94,.35);background:linear-gradient(160deg,var(--card) 0%,rgba(22,163,74,.07) 100%);box-shadow:0 0 0 1px rgba(34,197,94,.1),0 6px 24px rgba(0,0,0,.3);}
 .ccard-bar{height:3px;width:100%;}
 .card-head{padding:14px 14px 10px;display:flex;align-items:flex-start;gap:11px;}
@@ -307,6 +316,10 @@ body.light .fbtn.f-pend.active{background:#fef2f2;border-color:#fecaca;color:#dc
 body.light .fbtn.f-done.active{background:#f0fdf4;border-color:#bbf7d0;color:#16a34a;}
 body.light .fbtn.f-sub.active{background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed;}
 body.light .fbtn.f-inativo.active{background:#fffbeb;border-color:#fde68a;color:#d97706;}
+body.light .aviso-inativa{background:#fffbeb;border-bottom-color:#fde68a;color:#b45309;}
+body.light .aviso-inativa svg{stroke:#b45309;}
+body.light .aviso-inativa button{background:#fef3c7;border-color:#fcd34d;color:#b45309;}
+body.light .aviso-inativa button:hover{background:#d97706;color:#fff;}
 
 /* Progress bar no tema claro */
 body.light .progress-wrap{background:#f8faff;border-bottom:1px solid #e5e7eb;}
@@ -4047,7 +4060,7 @@ function renderCards(){
   }
   if(search){
     searchBanner.style.display='block';
-    searchBanner.textContent='🔍 Buscando em todos os grupos — '+state.grupos.reduce((n,g)=>n+(state.clientes[g]||[]).length,0)+' empresas';
+    searchBanner.textContent='🔍 Buscando em todos os grupos, incluindo inativas e fora da competência — '+state.grupos.reduce((n,g)=>n+(state.clientes[g]||[]).length,0)+' empresas';
   }else{
     searchBanner.style.display='none';
   }
@@ -4066,7 +4079,11 @@ function renderCards(){
     (c.cod||'').toLowerCase().includes(search)
   );
 
-  if(currentFilter==='inativo'){
+  if(search){
+    // Cirurgia 24 — busca encontra TUDO: ativas, inativas e fora da competência.
+    // Filtros são para navegar; busca é para achar. Empresa inativa aparece
+    // esmaecida (classe .inativo), então dá para distinguir na hora.
+  }else if(currentFilter==='inativo'){
     clients=clients.filter(c=>!c.ativo);
   }else{
     clients=clients.filter(c=>c.ativo);
@@ -4183,6 +4200,11 @@ function buildCard(c){
   const selAttr=`data-cid="${c.id}"`;
   return `<div class="ccard${!c.ativo?' inativo':''}${entregue?' entregue':''}${subPend?' sub-pendente':''}" id="card_${c.id}">
     <div class="ccard-bar" style="background:linear-gradient(90deg,${color},${color}66)"></div>
+    ${!c.ativo?`<div class="aviso-inativa">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>
+      <span>EMPRESA INATIVA</span>
+      <button onclick="event.stopPropagation();reativarEmpresaCard('${c.id}')" title="Reativar esta empresa">Reativar</button>
+    </div>`:''}
     <div class="card-head">
       <div class="cavatar" style="background:linear-gradient(135deg,${color} 0%,${color}88 100%)">${initials}</div>
       <div class="cinfo">
@@ -4569,6 +4591,15 @@ function toggleAtivo(cid){
   toast(wasAtivo?'Empresa inativada':'Empresa reativada','success');
   // 🌐 Sincronizar com Supabase (background)
   syncEmpresaAtivoSupabase(cid, novoAtivo);
+}
+
+// Cirurgia 24 — reativar direto pela faixa de aviso do card
+function reativarEmpresaCard(cid){
+  if(!podeExcluir()){toast('Apenas o administrador pode reativar empresas','error');return;}
+  const c=findCliente(cid);
+  if(!c) return;
+  if(!confirm('Reativar a empresa "'+c.nome+'"?\n\nEla volta a aparecer no painel e nas rotinas do mês.')) return;
+  toggleAtivo(cid);
 }
 
 function toggleCredenciais(cid){
