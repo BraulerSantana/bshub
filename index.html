@@ -1400,7 +1400,86 @@ body.light .fin-baixa.done{background:#16a34a;border-color:#16a34a;color:#fff;}
 // ============================================================
 const SUPABASE_URL='https://ikkyqzudnlczslickocf.supabase.co';
 const SUPABASE_KEY='sb_publishable_tgnEW1Eesz4GbFXS9TqbKg_eipijR-V';
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{
+  auth:{ autoRefreshToken:true, persistSession:true, detectSessionInUrl:true }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CIRURGIA 22 — Sessão: renovação automática e aviso de expiração
+// ═══════════════════════════════════════════════════════════════
+let _sessaoExpirada = false;
+
+function ehErroSessao(e){
+  const m = ((e && (e.message || e.error_description || e.msg)) || '').toLowerCase();
+  return m.includes('jwt') || m.includes('token') || m.includes('expired')
+      || m.includes('not authenticated') || m.includes('invalid claim')
+      || (e && (e.status === 401 || e.code === 'PGRST301'));
+}
+
+// Renova a sessão. Devolve true se conseguiu.
+async function renovarSessao(){
+  try{
+    const { data, error } = await sb.auth.refreshSession();
+    if(error || !data || !data.session) return false;
+    _sessaoExpirada = false;
+    esconderAvisoSessao();
+    return true;
+  }catch(_){ return false; }
+}
+
+// Checagem preventiva: renova se faltar menos de 5 min para vencer.
+async function checarSessao(){
+  try{
+    const { data } = await sb.auth.getSession();
+    const s = data && data.session;
+    if(!s){ return false; }
+    const faltam = (s.expires_at * 1000) - Date.now();
+    if(faltam < 5*60*1000) return await renovarSessao();
+    return true;
+  }catch(_){ return false; }
+}
+
+// Aviso fixo quando a sessão caiu de vez
+function mostrarAvisoSessao(){
+  if(document.getElementById('avisoSessao')) return;
+  const d = document.createElement('div');
+  d.id = 'avisoSessao';
+  d.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#dc2626;color:#fff;'
+    + 'padding:14px 18px;display:flex;align-items:center;gap:14px;justify-content:center;flex-wrap:wrap;'
+    + 'font-size:14px;font-weight:600;box-shadow:0 -4px 20px rgba(0,0,0,.3)';
+  d.innerHTML = '<span>⚠ Sua sessão expirou. As últimas alterações podem não ter sido salvas na nuvem.</span>'
+    + '<button onclick="location.reload()" style="background:#fff;color:#dc2626;border:0;padding:9px 18px;'
+    + 'border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Recarregar e entrar novamente</button>';
+  document.body.appendChild(d);
+}
+function esconderAvisoSessao(){
+  const d = document.getElementById('avisoSessao');
+  if(d) d.remove();
+}
+
+// Tratador único de falha de gravação (substitui os toasts espalhados)
+async function syncErro(e, ctx){
+  console.error('[Sync] ✗ ' + (ctx||'') + ':', e);
+  if(ehErroSessao(e)){
+    const ok = await renovarSessao();
+    if(ok){
+      toast('Sessão renovada. Refaça a última ação para garantir que foi salva.', 'error');
+    }else{
+      _sessaoExpirada = true;
+      mostrarAvisoSessao();
+    }
+    return;
+  }
+  toast('Erro ao salvar em nuvem: ' + (e && e.message ? e.message : e), 'error');
+}
+
+// Revalida quando a aba volta ao foco (caso clássico: micro dormiu)
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'visible') checarSessao();
+});
+window.addEventListener('online', checarSessao);
+setInterval(checarSessao, 4*60*1000);
+
 // Captura o tipo de link de autenticação ANTES da lib processar e limpar o hash
 // 'invite' = convite de colaborador | 'recovery' = redefinição de senha
 const _linkTipoAuth=new URLSearchParams((location.hash||'').replace(/^#/,'')).get('type');
@@ -1870,11 +1949,36 @@ async function salvarNovaSenha(){
     </div>
     <div id="cnpjBuscaStatus" style="font-size:11px;margin-top:5px;display:none;"></div>
   </div>
+  <div class="mf"><label>Inscrição Estadual <span style="color:var(--text3);font-weight:400;font-size:10px">(deixe em branco se não houver)</span></label><input id="mIE" type="text" placeholder="Ex.: 10.123.456-7 ou ISENTO"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
     <div class="mf" style="margin:0"><label>Código</label><input id="mCod" type="text" placeholder="COD interno"></div>
     <div class="mf" style="margin:0"><label>WhatsApp / Telefone</label><input id="mWhats" type="text" placeholder="(64) 9 9999-9999"></div>
   </div>
   <div class="mf"><label>E-mail</label><input id="mEmail" type="email" placeholder="contato@empresa.com.br"></div>
+
+  <!-- ENDEREÇO — seção recolhível -->
+  <div class="mf">
+    <div onclick="toggleEndereco()" id="endHeader" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-xs);user-select:none;">
+      <span id="endSeta" style="font-size:10px;color:var(--text3);transition:transform .2s;">▶</span>
+      <span style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.03em;">ENDEREÇO</span>
+      <span id="endResumo" style="margin-left:auto;font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;"></span>
+    </div>
+    <div id="endBody" style="display:none;margin-top:8px;" oninput="atualizarResumoEndereco()">
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;">
+        <div class="mf" style="margin:0"><label>CEP</label><input id="mCep" type="text" placeholder="00000-000"></div>
+        <div class="mf" style="margin:0"><label>Logradouro</label><input id="mLogradouro" type="text" placeholder="Rua / Avenida"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:8px;">
+        <div class="mf" style="margin:0"><label>Número</label><input id="mNumero" type="text" placeholder="123"></div>
+        <div class="mf" style="margin:0"><label>Complemento</label><input id="mComplemento" type="text" placeholder="Sala, andar..."></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 2fr 1fr;gap:8px;margin-top:8px;">
+        <div class="mf" style="margin:0"><label>Bairro</label><input id="mBairro" type="text" placeholder="Bairro"></div>
+        <div class="mf" style="margin:0"><label>Município</label><input id="mMunicipio" type="text" placeholder="Cidade"></div>
+        <div class="mf" style="margin:0"><label>UF</label><input id="mUf" type="text" placeholder="GO" maxlength="2" style="text-transform:uppercase"></div>
+      </div>
+    </div>
+  </div>
   <div class="mf"><label>Grupos <span style="color:var(--text3);font-weight:400;font-size:10px">(selecione um ou mais)</span></label>
     <div id="mGruposCheck" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-xs);"></div>
   </div>
@@ -2366,7 +2470,7 @@ async function syncEntregaSupabase(empresaId, marcar, timestamp){
     }
   } catch(e){
     console.error(`[Sync] ✗ Falha ao sincronizar entrega ${empresaId}/${mes}:`, e);
-    toast(`⚠ Erro ao salvar em nuvem: ${e.message}`, 'error');
+    syncErro(e);
   }
 }
 
@@ -2399,7 +2503,7 @@ async function syncObrigacaoSupabase(empresaId, rotinaId, marcar, dataMarcacao){
     }
   } catch(e){
     console.error(`[Sync] \u2717 Falha em obrigacao ${empresaId}/${rotinaId}:`, e);
-    toast(`\u26a0 Erro ao salvar em nuvem: ${e.message}`, 'error');
+    syncErro(e);
   }
 }
 
@@ -2421,7 +2525,7 @@ async function syncObrigacoesLoteSupabase(empresaId, rotinaIds, dataMarcacao){
     console.log(`[Sync] \u2713 ${rotinaIds.length} obrigacoes de ${empresaId}/${mes} salvas`);
   } catch(e){
     console.error(`[Sync] \u2717 Falha em lote ${empresaId}:`, e);
-    toast(`\u26a0 Erro ao salvar em nuvem: ${e.message}`, 'error');
+    syncErro(e);
   }
 }
 
@@ -2436,6 +2540,14 @@ async function syncEmpresaSupabase(cliente, gruposNomes){
       escritorio_id: usuarioAtual.escritorio_id,
       nome: cliente.nome || '(sem nome)',
       doc: cliente.doc || null,
+      ie: cliente.ie || null,
+      cep: cliente.cep || null,
+      logradouro: cliente.logradouro || null,
+      numero: cliente.numero || null,
+      complemento: cliente.complemento || null,
+      bairro: cliente.bairro || null,
+      municipio: cliente.municipio || null,
+      uf: cliente.uf || null,
       cod: cliente.cod || null,
       mei: !!cliente.mei,
       folha: !!cliente.folha,
@@ -2498,7 +2610,7 @@ async function syncEmpresaSupabase(cliente, gruposNomes){
     console.log('[Sync] OK Empresa ' + cliente.id + ' salva (' + vinculos.length + ' vinculo(s) de grupo)');
   } catch(e){
     console.error('[Sync] Falha ao salvar empresa ' + cliente.id + ':', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -2632,6 +2744,14 @@ async function loadStateFromSupabase(){
         id: emp.id,
         nome: emp.nome,
         doc: emp.doc || '',
+        ie: emp.ie || '',
+        cep: emp.cep || '',
+        logradouro: emp.logradouro || '',
+        numero: emp.numero || '',
+        complemento: emp.complemento || '',
+        bairro: emp.bairro || '',
+        municipio: emp.municipio || '',
+        uf: emp.uf || '',
         cod: emp.cod || '',
         mei: !!emp.mei,
         ativo: emp.ativo !== false,
@@ -2833,7 +2953,7 @@ async function syncBaixaSupabase(empresaId, marcar, dataBr){
     }
   } catch(e){
     console.error('[Sync] Falha em baixa ' + empresaId + '/' + mes + ':', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -2975,7 +3095,7 @@ async function syncSubtarefaCriarSupabase(empresaId, sub){
     console.log('[Sync] OK Subtarefa criada ' + sub.id);
   } catch(e){
     console.error('[Sync] Falha ao criar subtarefa:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -2991,7 +3111,7 @@ async function syncSubtarefaEditarSupabase(subId, novoTexto){
     console.log('[Sync] OK Subtarefa ' + subId + ' texto atualizado');
   } catch(e){
     console.error('[Sync] Falha ao editar subtarefa:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3005,7 +3125,7 @@ async function syncSubtarefaExcluirSupabase(subId){
     console.log('[Sync] OK Subtarefa ' + subId + ' excluida');
   } catch(e){
     console.error('[Sync] Falha ao excluir subtarefa:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3021,7 +3141,7 @@ async function syncSubtarefaFixarSupabase(subId, pinned, mesRef){
     console.log('[Sync] OK Subtarefa ' + subId + ' fixada=' + pinned);
   } catch(e){
     console.error('[Sync] Falha ao fixar subtarefa:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3051,7 +3171,7 @@ async function syncSubStatusSupabase(subId, marcar){
     }
   } catch(e){
     console.error('[Sync] Falha em subStatus:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3105,7 +3225,7 @@ async function syncObsSupabase(empresaId, texto){
     }
   } catch(e){
     console.error('[Sync] Falha em observacao ' + empresaId + '/' + mes + ':', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3136,7 +3256,7 @@ async function syncEmpresaAtivoSupabase(empresaId, novoAtivo){
     console.log('[Sync] OK Empresa ' + empresaId + ' ativo=' + novoAtivo);
   } catch(e){
     console.error('[Sync] Falha ao sincronizar ativo/inativo:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3660,7 +3780,7 @@ async function syncGrupoCriarSupabase(nome, cor){
     return data?.id;
   } catch(e){
     console.error('[Sync] Falha ao criar grupo:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
     return null;
   }
 }
@@ -3684,7 +3804,7 @@ async function syncGrupoInativarSupabase(nome){
     console.log('[Sync] OK Grupo "' + nome + '" inativado');
   } catch(e){
     console.error('[Sync] Falha ao inativar grupo:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3707,7 +3827,7 @@ async function syncGrupoReativarSupabase(nome){
     console.log('[Sync] OK Grupo "' + nome + '" reativado');
   } catch(e){
     console.error('[Sync] Falha ao reativar grupo:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3741,7 +3861,7 @@ async function syncRotinaCriarSupabase(rotina){
     console.log('[Sync] OK Rotina "' + rotina.name + '" criada (id=' + rotina.id + ')');
   } catch(e){
     console.error('[Sync] Falha ao criar rotina:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3758,7 +3878,7 @@ async function syncRotinaEditarSupabase(rotinaId, nome, cor){
     console.log('[Sync] OK Rotina ' + rotinaId + ' atualizada');
   } catch(e){
     console.error('[Sync] Falha ao editar rotina:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3780,7 +3900,7 @@ async function syncRotinaInativarSupabase(rotinaId){
     console.log('[Sync] OK Rotina ' + rotinaId + ' inativada');
   } catch(e){
     console.error('[Sync] Falha ao inativar rotina:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3800,7 +3920,7 @@ async function syncRotinaReativarSupabase(rotinaId){
     console.log('[Sync] OK Rotina ' + rotinaId + ' reativada');
   } catch(e){
     console.error('[Sync] Falha ao reativar rotina:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3841,7 +3961,7 @@ async function syncObAnualStatusSupabase(empresaId, obId, ano, marcada, dataBr){
     }
   } catch(e){
     console.error('[Sync] Falha em ob anual:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3862,7 +3982,7 @@ async function syncObAnualSubCriarSupabase(sub, empresaId, obId, ano){
     console.log('[Sync] OK SubAnual ' + sub.id + ' criada');
   } catch(e){
     console.error('[Sync] Falha ao criar sub anual:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3879,7 +3999,7 @@ async function syncObAnualSubExcluirSupabase(subId){
     console.log('[Sync] OK SubAnual ' + subId + ' excluída');
   } catch(e){
     console.error('[Sync] Falha ao excluir sub anual:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -3898,7 +4018,7 @@ async function syncObAnualSubStatusSupabase(subId, concluida){
     console.log('[Sync] OK SubAnual ' + subId + (concluida?' concluída':' reaberta'));
   } catch(e){
     console.error('[Sync] Falha em status de sub anual:', e);
-    toast('Erro ao salvar em nuvem: ' + e.message, 'error');
+    syncErro(e);
   }
 }
 
@@ -4545,6 +4665,14 @@ function openAddEmpresa(){
   document.getElementById('mEmpresaTitle').textContent='Nova Empresa';
   document.getElementById('mNome').value='';
   document.getElementById('mDoc').value='';
+  document.getElementById('mIE').value='';
+  document.getElementById('mCep').value='';
+  document.getElementById('mLogradouro').value='';
+  document.getElementById('mNumero').value='';
+  document.getElementById('mComplemento').value='';
+  document.getElementById('mBairro').value='';
+  document.getElementById('mMunicipio').value='';
+  document.getElementById('mUf').value='';
   document.getElementById('mCod').value='';
   document.getElementById('mWhats').value='';
   document.getElementById('mEmail').value='';
@@ -4565,6 +4693,7 @@ function openAddEmpresa(){
   buildAnualModal(null);
   document.getElementById('mMei').checked=false;
   document.getElementById('mDoc').value='';
+  document.getElementById('mIE').value='';
   const st=document.getElementById('cnpjBuscaStatus');
   if(st){st.style.display='none';st.textContent='';}
   buildRotinasCheck(null);
@@ -4578,6 +4707,15 @@ function openEditEmpresa(cid){
   document.getElementById('mEmpresaTitle').textContent='Editar Empresa';
   document.getElementById('mNome').value=c.nome;
   document.getElementById('mDoc').value=c.doc||'';
+  document.getElementById('mIE').value=c.ie||'';
+  document.getElementById('mCep').value=c.cep||'';
+  document.getElementById('mLogradouro').value=c.logradouro||'';
+  document.getElementById('mNumero').value=c.numero||'';
+  document.getElementById('mComplemento').value=c.complemento||'';
+  document.getElementById('mBairro').value=c.bairro||'';
+  document.getElementById('mMunicipio').value=c.municipio||'';
+  document.getElementById('mUf').value=c.uf||'';
+  atualizarResumoEndereco();
   document.getElementById('mCod').value=c.cod||'';
   document.getElementById('mWhats').value=c.whats||'';
   document.getElementById('mEmail').value=c.email||'';
@@ -4684,6 +4822,14 @@ async function saveEmpresa(){
   if(!grupos.length){toast('Selecione ao menos um grupo!','error');return;}
   const grupo=grupos[0]; // grupo principal (compatibilidade)
   const doc=document.getElementById('mDoc').value.trim();
+  const ie=document.getElementById('mIE').value.trim();
+  const cep=document.getElementById('mCep').value.trim();
+  const logradouro=document.getElementById('mLogradouro').value.trim();
+  const numero=document.getElementById('mNumero').value.trim();
+  const complemento=document.getElementById('mComplemento').value.trim();
+  const bairro=document.getElementById('mBairro').value.trim();
+  const municipio=document.getElementById('mMunicipio').value.trim();
+  const uf=document.getElementById('mUf').value.trim();
   const cod=document.getElementById('mCod').value.trim();
   const whats=document.getElementById('mWhats').value.trim();
   const email=document.getElementById('mEmail').value.trim();
@@ -4740,8 +4886,8 @@ async function saveEmpresa(){
         const vencDia=vencDiaOk;
         // Se estamos na aba de um colaborador, PRESERVA os flags de rotina do cadastro atual da empresa
         const updated = salvarCadastroRotinas
-          ? {...existingCliente,nome,doc,cod,whats,email,grupo,grupos,folha,inss,fgts,consignado,horas,rotinas:customRotinas,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario,vencDia}
-          : {...existingCliente,nome,doc,cod,whats,email,grupo,grupos,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario,vencDia};
+          ? {...existingCliente,nome,doc,ie,cep,logradouro,numero,complemento,bairro,municipio,uf,cod,whats,email,grupo,grupos,folha,inss,fgts,consignado,horas,rotinas:customRotinas,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario,vencDia}
+          : {...existingCliente,nome,doc,ie,cep,logradouro,numero,complemento,bairro,municipio,uf,cod,whats,email,grupo,grupos,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario,vencDia};
         syncClienteGrupos(updated, grupos);
       }
       saveAnualFromModal(editingEmpresaId);
@@ -4749,7 +4895,7 @@ async function saveEmpresa(){
     }else{
       const id='emp_'+Date.now();
       _ultimoIdCriado = id;
-      const novo={id,cod,nome,doc,whats,email,grupo,grupos,folha,inss,fgts,consignado,horas,rotinas:customRotinas,ativo:true,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario:_honInput,vencDia:vencDiaOk};
+      const novo={id,cod,nome,doc,ie,cep,logradouro,numero,complemento,bairro,municipio,uf,whats,email,grupo,grupos,folha,inss,fgts,consignado,horas,rotinas:customRotinas,ativo:true,obs,login,senha,gov,codAcesso,empWebLogin,empWebSenha,compIni,compFim,mei,honorario:_honInput,vencDia:vencDiaOk};
       syncClienteGrupos(novo, grupos);
       saveAnualFromModal(id);
       toast('Empresa adicionada!','success');
@@ -5831,6 +5977,8 @@ function gerarFichaEmpresa(){
   // Informações gerais
   const infoItems=[
     ['CNPJ / CPF / CEI', c.doc||'—'],
+    c.ie?['Inscrição Estadual', c.ie]:'',
+    montarEnderecoTexto(c)?['Endereço', montarEnderecoTexto(c)]:'',
     ['Grupos', getClienteGruposLabel(c)],
     c.mei?['Tipo','MEI']:'',
     ['Código', c.cod||'—'],
@@ -6134,6 +6282,38 @@ function aplicarRecorrenciaAuto(){
 // BSHub — BUSCA CNPJ — BrasilAPI (detecção MEI)
 // ============================================================
 // ===== BUSCA CNPJ — BRASIL API =====
+// ═══════════ CIRURGIA 23 — Endereço ═══════════
+function toggleEndereco(){
+  const b=document.getElementById('endBody'), s=document.getElementById('endSeta');
+  if(!b) return;
+  const aberto = b.style.display!=='none';
+  b.style.display = aberto ? 'none' : 'block';
+  if(s) s.style.transform = aberto ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+function abrirEndereco(){
+  const b=document.getElementById('endBody'), s=document.getElementById('endSeta');
+  if(b && b.style.display==='none'){ b.style.display='block'; if(s) s.style.transform='rotate(90deg)'; }
+}
+function montarEnderecoTexto(c){
+  if(!c) return '';
+  const p1=[c.logradouro, c.numero].filter(Boolean).join(', ');
+  const p2=[p1, c.complemento, c.bairro].filter(Boolean).join(' - ');
+  const p3=[c.municipio, c.uf].filter(Boolean).join('/');
+  const full=[p2, p3].filter(Boolean).join(' - ');
+  return c.cep ? (full ? full+' · CEP '+c.cep : 'CEP '+c.cep) : full;
+}
+function atualizarResumoEndereco(){
+  const el=document.getElementById('endResumo');
+  if(!el) return;
+  const val=id=>{const e=document.getElementById(id);return e?e.value.trim():''};
+  const txt=montarEnderecoTexto({
+    logradouro:val('mLogradouro'), numero:val('mNumero'), complemento:val('mComplemento'),
+    bairro:val('mBairro'), municipio:val('mMunicipio'), uf:val('mUf'), cep:val('mCep')
+  });
+  el.textContent = txt || 'não cadastrado';
+  el.style.color = txt ? 'var(--text2)' : 'var(--text3)';
+}
+
 async function buscarCNPJ(){
   const raw = document.getElementById('mDoc').value.replace(/\D/g,'');
   if(raw.length !== 14){
@@ -6181,6 +6361,17 @@ async function buscarCNPJ(){
       const tel = (d.ddd_telefone_1).replace(/\D/g,'');
       setIfEmpty('mWhats', tel);
     }
+
+    // Endereço (Cirurgia 23) — só preenche o que estiver vazio
+    setIfEmpty('mCep',         (d.cep||'').toString().replace(/\D/g,'').replace(/^(\d{5})(\d{3})$/,'$1-$2'));
+    setIfEmpty('mLogradouro',  [d.descricao_tipo_de_logradouro, d.logradouro].filter(Boolean).join(' ').trim());
+    setIfEmpty('mNumero',      d.numero||'');
+    setIfEmpty('mComplemento', d.complemento||'');
+    setIfEmpty('mBairro',      d.bairro||'');
+    setIfEmpty('mMunicipio',   d.municipio||'');
+    setIfEmpty('mUf',          d.uf||'');
+    if(d.logradouro || d.municipio){ abrirEndereco(); }
+    atualizarResumoEndereco();
 
     // MEI — marcar automaticamente
     // BrasilAPI retorna opcao_pelo_mei: true para empresas MEI
