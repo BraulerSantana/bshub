@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documento · BSHub</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#1d4ed8">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231d4ed8'/%3E%3Cg fill='none' stroke='%23fff' stroke-width='5' stroke-linejoin='round'%3E%3Crect x='16' y='16' width='13' height='13' rx='2'/%3E%3Crect x='35' y='16' width='13' height='13' rx='2'/%3E%3Crect x='16' y='35' width='13' height='13' rx='2'/%3E%3Crect x='35' y='35' width='13' height='13' rx='2'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--b300:#93c5fd;--b600:#1d4ed8;--b700:#1e40af;--ink:#0f172a}
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:grid;place-items:center;
+  padding:24px;background:linear-gradient(155deg,#132a6b 0%,#1d4ed8 55%,#2563eb 100%);
+  color:#fff;position:relative;overflow-x:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none}
+.o1{width:460px;height:460px;background:#3b82f6;opacity:.4;top:-150px;right:-110px}
+.o2{width:400px;height:400px;background:#1e3a8a;opacity:.5;bottom:-170px;left:-90px}
+.card{position:relative;z-index:2;max-width:480px;width:100%;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.19);border-radius:20px;
+  padding:34px 30px;backdrop-filter:blur(12px);box-shadow:0 28px 64px rgba(8,16,40,.36);text-align:center}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:16px;
+  letter-spacing:-.02em;margin-bottom:26px}
+.brand .mk{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.25);display:grid;place-items:center}
+.brand .mk svg{width:16px;height:16px;stroke:#fff}
+.brand span{color:var(--b300)}
+.ic{width:62px;height:62px;margin:0 auto 20px;border-radius:16px;display:grid;place-items:center;
+  background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22)}
+.ic svg{width:30px;height:30px;stroke:#fff;stroke-width:1.8}
+.ic.err{background:rgba(220,38,38,.2);border-color:rgba(252,165,165,.4)}
+.ic.err svg{stroke:#fca5a5}
+h1{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.25;margin-bottom:8px}
+.sub{font-size:14px;color:#dbeafe;line-height:1.55}
+.meta{margin:20px 0;padding:15px;background:rgba(0,0,0,.16);border-radius:12px;text-align:left}
+.mr{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px}
+.mk2{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--b300);min-width:88px;flex:none}
+.mv{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#fff;flex:1;word-break:break-all}
+.bt{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  background:#fff;color:var(--b700);font-family:inherit;font-size:15px;font-weight:700;
+  padding:15px;border:0;border-radius:12px;cursor:pointer;transition:.2s;
+  box-shadow:0 8px 22px rgba(8,16,40,.24)}
+.bt:hover:not(:disabled){transform:translateY(-1px)}
+.bt:disabled{opacity:.6;cursor:default}
+.bt svg{width:17px;height:17px}
+.nota{font-size:11.5px;color:#bfdbfe;margin-top:15px;line-height:1.6}
+.spin{width:34px;height:34px;border:3px solid rgba(255,255,255,.22);border-top-color:#fff;
+  border-radius:50%;margin:0 auto;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.hide{display:none}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:focus-visible{outline:2.5px solid #93c5fd;outline-offset:3px}
+</style>
+</head>
+<body>
+<div class="orb o1"></div><div class="orb o2"></div>
+
+<div class="card">
+  <div class="brand">
+    <span class="mk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+    BS<span>Hub</span>
+  </div>
+
+  <!-- carregando -->
+  <div id="vLoad">
+    <div class="spin"></div>
+    <p class="sub" style="margin-top:18px">Carregando documento…</p>
+  </div>
+
+  <!-- pronto -->
+  <div id="vOk" class="hide">
+    <div class="ic">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+    </div>
+    <h1>Seu documento está pronto</h1>
+    <p class="sub">Disponibilizado pelo seu escritório de contabilidade.</p>
+    <div class="meta">
+      <div class="mr"><span class="mk2">Arquivo</span><span class="mv" id="fNome">—</span></div>
+      <div class="mr" id="rEmpresa"><span class="mk2">Empresa</span><span class="mv" id="fEmpresa">—</span></div>
+      <div class="mr" id="rComp"><span class="mk2">Competência</span><span class="mv" id="fComp">—</span></div>
+    </div>
+    <button class="bt" id="btBaixar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Baixar documento
+    </button>
+    <p class="nota" id="notaExp"></p>
+  </div>
+
+  <!-- erro -->
+  <div id="vErr" class="hide">
+    <div class="ic err">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    </div>
+    <h1 id="errT">Link indisponível</h1>
+    <p class="sub" id="errM"></p>
+    <p class="nota">Em caso de dúvida, entre em contato com seu escritório de contabilidade.</p>
+  </div>
+</div>
+
+<script>
+const FN = 'https://ikkyqzudnlczslickocf.supabase.co/functions/v1/baixar-documento';
+
+const $ = id => document.getElementById(id);
+const mostrar = v => { ['vLoad','vOk','vErr'].forEach(x=>$(x).classList.toggle('hide', x!==v)); };
+
+const MSG = {
+  sem_token:     ['Link inválido', 'Este endereço não contém um documento válido. Confira se copiou o link inteiro.'],
+  nao_encontrado:['Documento não encontrado', 'Este documento não existe mais ou foi removido pelo escritório.'],
+  substituido:   ['Documento substituído', 'Foi enviada uma versão mais recente. Procure o e-mail ou a mensagem mais nova.'],
+  expurgado:     ['Arquivo não disponível', 'O prazo de armazenamento terminou. Solicite o reenvio ao seu escritório.'],
+  expirado:      ['Link expirado', 'Este link passou da validade. Solicite um novo ao seu escritório.'],
+  falha_arquivo: ['Falha ao preparar o arquivo', 'Tente novamente em alguns instantes.'],
+  erro_interno:  ['Erro inesperado', 'Tente novamente em alguns instantes.']
+};
+
+function erro(cod){
+  const [t,m] = MSG[cod] || MSG.erro_interno;
+  $('errT').textContent = t;
+  $('errM').textContent = m;
+  mostrar('vErr');
+}
+
+function fmtComp(c){
+  if(!c || !/^\d{4}-\d{2}$/.test(c)) return c || '';
+  const [a,m] = c.split('-');
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  return (meses[+m-1]||m) + '/' + a;
+}
+
+const token = new URLSearchParams(location.search).get('t');
+
+(async function init(){
+  if(!token) return erro('sem_token');
+  try{
+    const r = await fetch(FN + '?t=' + encodeURIComponent(token) + '&acao=info');
+    const d = await r.json();
+    if(!d.ok) return erro(d.erro);
+
+    $('fNome').textContent = d.nome || '—';
+    if(d.empresa) $('fEmpresa').textContent = d.empresa; else $('rEmpresa').style.display='none';
+    if(d.competencia) $('fComp').textContent = fmtComp(d.competencia); else $('rComp').style.display='none';
+
+    if(d.expira_em){
+      const dias = Math.ceil((new Date(d.expira_em) - new Date()) / 86400000);
+      $('notaExp').textContent = dias > 0
+        ? 'Este link fica disponível por mais ' + dias + (dias===1?' dia.':' dias.')
+        : '';
+    }
+    mostrar('vOk');
+  }catch(_){ erro('erro_interno'); }
+})();
+
+$('btBaixar').addEventListener('click', async () => {
+  const b = $('btBaixar');
+  b.disabled = true;
+  const original = b.innerHTML;
+  b.innerHTML = 'Preparando…';
+  try{
+    const r = await fetch(FN + '?t=' + encodeURIComponent(token) + '&acao=baixar');
+    const d = await r.json();
+    if(!d.ok || !d.url){ b.disabled=false; b.innerHTML=original; return erro(d.erro); }
+    location.href = d.url;
+    setTimeout(()=>{ b.disabled=false; b.innerHTML=original; }, 2500);
+  }catch(_){
+    b.disabled=false; b.innerHTML=original;
+    erro('erro_interno');
+  }
+});
+</script>
+</body>
+</html>

@@ -469,6 +469,14 @@ body.light .mes-label{background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit
 .doc-meta{font-size:9px;color:var(--text3);margin-top:1px;}
 .doc-st{font-size:8.5px;font-weight:700;letter-spacing:.03em;padding:2px 7px;border-radius:99px;flex:none;}
 .st-pend{color:var(--text3);background:rgba(148,163,184,.15);}
+.st-link{color:#3b82f6;background:rgba(59,130,246,.15);}
+.st-baix{color:#16a34a;background:rgba(22,163,74,.16);}
+.doc-cp{width:20px;height:20px;border-radius:5px;border:0;background:none;cursor:pointer;flex:none;
+  display:grid;place-items:center;opacity:.55;transition:.15s;}
+.doc-cp:hover{opacity:1;background:rgba(59,130,246,.14);}
+.doc-cp svg{width:11px;height:11px;stroke:var(--accent);}
+.doc-cp.ok svg{stroke:#16a34a;}
+.doc-baixou{font-size:8.5px;color:#16a34a;margin-top:2px;font-weight:600;}
 .doc-del{width:20px;height:20px;border-radius:5px;border:0;background:none;cursor:pointer;flex:none;
   display:grid;place-items:center;opacity:.5;transition:.15s;}
 .doc-del:hover{opacity:1;background:rgba(220,38,38,.12);}
@@ -2723,7 +2731,7 @@ async function loadStateFromSupabase(){
       sb.from('ob_anual_sub_status').select('sub_id, concluida'),
       sb.from('profiles').select('id, role, nome'),
       sb.from('colaborador_rotinas').select('user_id, empresa_id, rotina_id'),
-      sb.from('documentos').select('id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, status_envio, enviado_em, entregue_em, baixado_em, ativo').eq('ativo', true)
+      sb.from('documentos').select('id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, token, expira_em, status_envio, enviado_em, entregue_em, baixado_em, baixado_count, ativo').eq('ativo', true)
     ]);
     
     // Montar novo state no formato compatível com localStorage antigo
@@ -7107,15 +7115,25 @@ function buildDocumentosHTML(cid){
   const semEmail=!(c.email||'').trim();
 
   const linhas = docs.length
-    ? docs.map(d=>`<div class="doc-row">
+    ? docs.map(d=>{
+        const baixou = !!d.baixado_em;
+        const temLink = !!d.expira_em;
+        const cls = baixou ? 'st-baix' : (temLink ? 'st-link' : 'st-pend');
+        const txt = baixou ? 'BAIXADO' : (temLink ? 'LINK ATIVO' : 'PENDENTE');
+        const extra = baixou
+          ? `<div class="doc-baixou">${fmtDataHora(d.baixado_em)}${(d.baixado_count||0)>1?` · ${d.baixado_count}x`:''}</div>`
+          : '';
+        return `<div class="doc-row">
         <span class="doc-ic">${ICO_PDF_SM}</span>
         <span class="doc-info">
           <div class="doc-nome" title="${(d.nome_arquivo||'').replace(/"/g,'&quot;')}">${d.nome_arquivo||''}</div>
           <div class="doc-meta">${fmtTamanho(d.tamanho_bytes)}</div>
+          ${extra}
         </span>
-        <span class="doc-st st-pend">PENDENTE</span>
+        <span class="doc-st ${cls}">${txt}</span>
+        <button class="doc-cp" id="cp_${d.id}" title="Copiar link para o cliente" onclick="event.stopPropagation();copiarLinkDocumento('${d.id}','${cid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
         <button class="doc-del" title="Remover" onclick="event.stopPropagation();removerDocumento('${d.id}','${cid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
-      </div>`).join('')
+      </div>`}).join('')
     : '<div class="docs-vazio">Nenhum documento nesta competência</div>';
 
   const zona = semEmail
@@ -7146,12 +7164,86 @@ function buildDocumentosHTML(cid){
   </div>`;
 }
 
+
+// ═══ Cirurgia 26 — link seguro e comprovação ═══
+
+const DOC_VALIDADE_DIAS = 30;
+const DOC_URL_BASE = location.origin + '/doc.html';
+
+function fmtDataHora(iso){
+  if(!iso) return '';
+  const d=new Date(iso);
+  const p=n=>String(n).padStart(2,'0');
+  return p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+// Gera (na primeira vez) e copia o link do documento.
+// A validade só começa a contar quando o link é compartilhado.
+async function copiarLinkDocumento(id,cid){
+  const d=(state.documentos||[]).find(x=>x.id===id);
+  if(!d) return;
+  const btn=document.getElementById('cp_'+id);
+  try{
+    let token=d.token, expira=d.expira_em;
+
+    if(!token || !expira){
+      const venc=new Date(Date.now()+DOC_VALIDADE_DIAS*86400000).toISOString();
+      const { data, error } = await sb.from('documentos')
+        .update({ expira_em: venc })
+        .eq('id', id)
+        .select('token, expira_em')
+        .single();
+      if(error) throw error;
+      token=data.token; expira=data.expira_em;
+      d.token=token; d.expira_em=expira;
+    }
+
+    const link=DOC_URL_BASE+'?t='+token;
+    await navigator.clipboard.writeText(link);
+
+    if(btn){ btn.classList.add('ok'); setTimeout(()=>btn.classList.remove('ok'),1400); }
+    toast('Link copiado — válido por '+DOC_VALIDADE_DIAS+' dias','success');
+    renderCards();
+    const b=document.getElementById('dbody_'+cid);
+    if(b){ b.style.display='block'; const t=document.getElementById('dtoggle_'+cid); if(t)t.style.transform='rotate(90deg)'; }
+  }catch(e){
+    // clipboard bloqueado (contexto inseguro) — mostra o link para copiar na mão
+    if(e && e.name==='NotAllowedError' && d.token){
+      prompt('Copie o link do documento:', DOC_URL_BASE+'?t='+d.token);
+      return;
+    }
+    syncErro(e,'gerar link do documento');
+  }
+}
+
+// Relê o status dos documentos desta empresa (o download acontece
+// no servidor, então o navegador só sabe se perguntar).
+async function atualizarStatusDocs(cid){
+  try{
+    const mk=mesKey();
+    const { data, error } = await sb.from('documentos')
+      .select('id, token, expira_em, baixado_em, baixado_count')
+      .eq('empresa_id', cid).eq('competencia', mk).eq('ativo', true);
+    if(error) throw error;
+    let mudou=false;
+    (data||[]).forEach(n=>{
+      const a=(state.documentos||[]).find(x=>x.id===n.id);
+      if(!a) return;
+      if(a.baixado_em!==n.baixado_em || a.baixado_count!==n.baixado_count || a.expira_em!==n.expira_em){
+        Object.assign(a,n); mudou=true;
+      }
+    });
+    if(mudou) renderCards();
+  }catch(_){ /* silencioso: é só atualização de status */ }
+}
+
 function toggleDocsWrap(cid){
   const b=document.getElementById('dbody_'+cid), t=document.getElementById('dtoggle_'+cid);
   if(!b) return;
   const aberto=b.style.display==='block';
   b.style.display=aberto?'none':'block';
   if(t) t.style.transform=aberto?'rotate(0)':'rotate(90deg)';
+  if(!aberto) atualizarStatusDocs(cid);
 }
 
 function dropDocumentos(ev,cid){
