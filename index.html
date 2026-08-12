@@ -471,6 +471,17 @@ body.light .mes-label{background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit
 .st-pend{color:var(--text3);background:rgba(148,163,184,.15);}
 .st-link{color:#3b82f6;background:rgba(59,130,246,.15);}
 .st-baix{color:#16a34a;background:rgba(22,163,74,.16);}
+.st-envi{color:#3b82f6;background:rgba(59,130,246,.15);}
+.st-entr{color:#16a34a;background:rgba(22,163,74,.14);}
+.st-falh{color:#dc2626;background:rgba(220,38,38,.16);}
+.doc-falha{font-size:8.5px;color:#dc2626;margin-top:2px;font-weight:600;}
+.docs-enviar{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  margin-top:7px;padding:9px;border-radius:var(--radius-xs);border:0;cursor:pointer;
+  background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;font-family:inherit;
+  font-size:10.5px;font-weight:800;letter-spacing:.04em;transition:.18s;}
+.docs-enviar:hover:not(:disabled){filter:brightness(1.1);}
+.docs-enviar:disabled{opacity:.5;cursor:default;}
+.docs-enviar svg{width:12px;height:12px;}
 .doc-cp{width:20px;height:20px;border-radius:5px;border:0;background:none;cursor:pointer;flex:none;
   display:grid;place-items:center;opacity:.55;transition:.15s;}
 .doc-cp:hover{opacity:1;background:rgba(59,130,246,.14);}
@@ -2731,7 +2742,7 @@ async function loadStateFromSupabase(){
       sb.from('ob_anual_sub_status').select('sub_id, concluida'),
       sb.from('profiles').select('id, role, nome'),
       sb.from('colaborador_rotinas').select('user_id, empresa_id, rotina_id'),
-      sb.from('documentos').select('id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, token, expira_em, status_envio, enviado_em, entregue_em, baixado_em, baixado_count, ativo').eq('ativo', true)
+      sb.from('documentos').select('id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, token, expira_em, status_envio, enviado_em, entregue_em, falha_motivo, destinatario, baixado_em, baixado_count, ativo').eq('ativo', true)
     ]);
     
     // Montar novo state no formato compatível com localStorage antigo
@@ -7117,12 +7128,18 @@ function buildDocumentosHTML(cid){
   const linhas = docs.length
     ? docs.map(d=>{
         const baixou = !!d.baixado_em;
-        const temLink = !!d.expira_em;
-        const cls = baixou ? 'st-baix' : (temLink ? 'st-link' : 'st-pend');
-        const txt = baixou ? 'BAIXADO' : (temLink ? 'LINK ATIVO' : 'PENDENTE');
-        const extra = baixou
-          ? `<div class="doc-baixou">${fmtDataHora(d.baixado_em)}${(d.baixado_count||0)>1?` · ${d.baixado_count}x`:''}</div>`
-          : '';
+        const st = d.status_envio || '';
+        let cls, txt;
+        if(baixou)                { cls='st-baix'; txt='BAIXADO'; }
+        else if(st==='falhou')    { cls='st-falh'; txt='FALHOU'; }
+        else if(st==='entregue')  { cls='st-entr'; txt='ENTREGUE'; }
+        else if(st==='enviando')  { cls='st-envi'; txt='ENVIANDO'; }
+        else if(d.expira_em)      { cls='st-link'; txt='LINK ATIVO'; }
+        else                      { cls='st-pend'; txt='PENDENTE'; }
+        let extra = '';
+        if(baixou) extra = `<div class="doc-baixou">${fmtDataHora(d.baixado_em)}${(d.baixado_count||0)>1?` · ${d.baixado_count}x`:''}</div>`;
+        else if(st==='falhou' && d.falha_motivo) extra = `<div class="doc-falha">${d.falha_motivo}</div>`;
+        else if(st==='entregue' && d.entregue_em) extra = `<div class="doc-baixou">entregue ${fmtDataHora(d.entregue_em)}</div>`;
         return `<div class="doc-row">
         <span class="doc-ic">${ICO_PDF_SM}</span>
         <span class="doc-info">
@@ -7160,6 +7177,10 @@ function buildDocumentosHTML(cid){
     <div class="docs-body" id="dbody_${cid}">
       ${zona}
       ${linhas}
+      ${(!semEmail && docs.length) ? `<button class="docs-enviar" id="env_${cid}" onclick="event.stopPropagation();enviarDocumentos('${cid}')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        ENVIAR ${docs.length>1?`OS ${docs.length} DOCUMENTOS`:'AO CLIENTE'}
+      </button>` : ''}
     </div>
   </div>`;
 }
@@ -7179,6 +7200,70 @@ function fmtDataHora(iso){
 
 // Gera (na primeira vez) e copia o link do documento.
 // A validade só começa a contar quando o link é compartilhado.
+
+// ═══ Cirurgia 27 — envio por e-mail ═══
+
+async function enviarDocumentos(cid){
+  const c=findCliente(cid);
+  if(!c) return;
+  const docs=getDocs(cid);
+  if(!docs.length){ toast('Nenhum documento para enviar','error'); return; }
+  const email=(c.email||'').trim();
+  if(!email){ toast('Cadastre o e-mail da empresa','error'); return; }
+
+  const jaEnviados=docs.filter(d=>d.enviado_em).length;
+  const msg = jaEnviados
+    ? `Reenviar ${docs.length} documento(s) para ${email}?\n\n${jaEnviados} já foram enviados antes — o cliente vai receber tudo de novo.`
+    : `Enviar ${docs.length} documento(s) para ${email}?`;
+  if(!confirm(msg)) return;
+
+  const btn=document.getElementById('env_'+cid);
+  if(btn){ btn.disabled=true; btn.textContent='ENVIANDO…'; }
+
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session) throw new Error('Sessão expirada');
+
+    const resp=await fetch(SUPABASE_URL+'/functions/v1/enviar-documentos',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+session.access_token,
+        'apikey':SUPABASE_KEY
+      },
+      body:JSON.stringify({ empresa_id:cid, competencia:mesKey() })
+    });
+    const r=await resp.json();
+
+    if(!resp.ok || !r.ok){
+      const motivos={
+        sem_email:'A empresa está sem e-mail cadastrado',
+        sem_documentos:'Nenhum documento nesta competência',
+        sem_permissao:'Você não tem permissão sobre esta empresa',
+        falha_envio:'O servidor de e-mail recusou o envio'+(r.detalhe?': '+r.detalhe:''),
+        nao_autenticado:'Sessão expirada — recarregue a página'
+      };
+      throw new Error(motivos[r.erro] || 'Falha ao enviar');
+    }
+
+    // reflete na tela sem esperar o webhook
+    const agora=new Date().toISOString();
+    docs.forEach(d=>{ d.enviado_em=agora; d.destinatario=email; d.status_envio='enviando'; d.falha_motivo=null; });
+
+    toast(r.enviados+' documento(s) enviado(s) para '+email,'success');
+    renderCards();
+    const b=document.getElementById('dbody_'+cid);
+    if(b){ b.style.display='block'; const t=document.getElementById('dtoggle_'+cid); if(t)t.style.transform='rotate(90deg)'; }
+
+    // o webhook costuma chegar em segundos
+    setTimeout(()=>atualizarStatusDocs(cid), 6000);
+
+  }catch(e){
+    toast(e.message||'Falha ao enviar','error');
+    if(btn){ btn.disabled=false; renderCards(); }
+  }
+}
+
 async function copiarLinkDocumento(id,cid){
   const d=(state.documentos||[]).find(x=>x.id===id);
   if(!d) return;
@@ -7222,7 +7307,7 @@ async function atualizarStatusDocs(cid){
   try{
     const mk=mesKey();
     const { data, error } = await sb.from('documentos')
-      .select('id, token, expira_em, baixado_em, baixado_count')
+      .select('id, token, expira_em, baixado_em, baixado_count, status_envio, enviado_em, entregue_em, falha_motivo, destinatario')
       .eq('empresa_id', cid).eq('competencia', mk).eq('ativo', true);
     if(error) throw error;
     let mudou=false;
