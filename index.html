@@ -484,6 +484,9 @@ body.light .mes-label{background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit
   display:grid;place-items:center;opacity:.55;transition:.15s;}
 .doc-sub:hover{opacity:1;background:rgba(245,158,11,.16);}
 .doc-sub svg{width:11px;height:11px;stroke:#f59e0b;}
+.doc-row.expurgado{opacity:.6;}
+.st-exp{color:var(--text3);background:rgba(148,163,184,.14);}
+.doc-exp{font-size:8.5px;color:var(--text3);margin-top:2px;font-weight:600;}
 .doc-ver{font-family:var(--mono,monospace);font-size:8px;font-weight:800;color:#f59e0b;
   background:rgba(245,158,11,.14);padding:1px 5px;border-radius:99px;margin-left:5px;}
 .docs-enviar{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
@@ -2760,7 +2763,7 @@ async function loadStateFromSupabase(){
       sb.from('ob_anual_sub_status').select('sub_id, concluida'),
       sb.from('profiles').select('id, role, nome'),
       sb.from('colaborador_rotinas').select('user_id, empresa_id, rotina_id'),
-      sb.from('documentos').select('id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, validacao_json, versao, substitui_id, revogado_em, substituido_em, token, expira_em, status_envio, enviado_em, entregue_em, falha_motivo, destinatario, baixado_em, baixado_count, ativo').eq('ativo', true)
+      sb.from('documentos').select('id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, validacao_json, versao, substitui_id, revogado_em, substituido_em, arquivo_removido_em, token, expira_em, status_envio, enviado_em, entregue_em, falha_motivo, destinatario, baixado_em, baixado_count, ativo').eq('ativo', true)
     ]);
     
     // Montar novo state no formato compatível com localStorage antigo
@@ -7146,9 +7149,11 @@ function buildDocumentosHTML(cid){
   const linhas = docs.length
     ? docs.map(d=>{
         const baixou = !!d.baixado_em;
+        const expurgado = !!d.arquivo_removido_em;
         const st = d.status_envio || '';
         let cls, txt;
-        if(baixou)                { cls='st-baix'; txt='BAIXADO'; }
+        if(expurgado)             { cls='st-exp';  txt='ARQUIVO EXPIRADO'; }
+        else if(baixou)           { cls='st-baix'; txt='BAIXADO'; }
         else if(st==='falhou')    { cls='st-falh'; txt='FALHOU'; }
         else if(st==='entregue')  { cls='st-entr'; txt='ENTREGUE'; }
         else if(st==='enviando')  { cls='st-envi'; txt='ENVIANDO'; }
@@ -7160,10 +7165,11 @@ function buildDocumentosHTML(cid){
         else if(vj && (vj.status==='nao_conferido'||vj.status==='indisponivel')) selo = '<span class="doc-val val-nc">CNPJ não conferido</span>';
         const rot = (vj && vj.rotula) ? `<div class="doc-rot">${vj.rotula}</div>` : '';
         let extra = '';
-        if(baixou) extra = `<div class="doc-baixou">${fmtDataHora(d.baixado_em)}${(d.baixado_count||0)>1?` · ${d.baixado_count}x`:''}</div>`;
+        if(expurgado) extra = `<div class="doc-exp">arquivo removido em ${fmtDataHora(d.arquivo_removido_em)}${baixou?' · cliente baixou '+fmtDataHora(d.baixado_em):''}</div>`;
+        else if(baixou) extra = `<div class="doc-baixou">${fmtDataHora(d.baixado_em)}${(d.baixado_count||0)>1?` · ${d.baixado_count}x`:''}</div>`;
         else if(st==='falhou' && d.falha_motivo) extra = `<div class="doc-falha">${d.falha_motivo}</div>`;
         else if(st==='entregue' && d.entregue_em) extra = `<div class="doc-baixou">entregue ${fmtDataHora(d.entregue_em)}</div>`;
-        return `<div class="doc-row">
+        return `<div class="doc-row${expurgado?' expurgado':''}">
         <span class="doc-ic">${ICO_PDF_SM}</span>
         <span class="doc-info">
           <div class="doc-nome" title="${(d.nome_arquivo||'').replace(/"/g,'&quot;')}">${d.nome_arquivo||''}${(d.versao||1)>1?`<span class="doc-ver">v${d.versao}</span>`:''}</div>
@@ -7172,8 +7178,8 @@ function buildDocumentosHTML(cid){
           ${extra}
         </span>
         <span class="doc-st ${cls}">${txt}</span>
-        <button class="doc-sub" title="Substituir por versão corrigida" onclick="event.stopPropagation();substituirDocumento('${d.id}','${cid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
-        <button class="doc-cp" id="cp_${d.id}" title="Copiar link para o cliente" onclick="event.stopPropagation();copiarLinkDocumento('${d.id}','${cid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
+        ${expurgado?'':`<button class="doc-sub" title="Substituir por versão corrigida" onclick="event.stopPropagation();substituirDocumento('${d.id}','${cid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></button>
+        <button class="doc-cp" id="cp_${d.id}" title="Copiar link para o cliente" onclick="event.stopPropagation();copiarLinkDocumento('${d.id}','${cid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>`}
         <button class="doc-del" title="Remover" onclick="event.stopPropagation();removerDocumento('${d.id}','${cid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
       </div>`}).join('')
     : '<div class="docs-vazio">Nenhum documento nesta competência</div>';
@@ -7202,7 +7208,7 @@ function buildDocumentosHTML(cid){
     <div class="docs-body" id="dbody_${cid}">
       ${zona}
       ${linhas}
-      ${(!semEmail && docs.length) ? `<button class="docs-enviar" id="env_${cid}" onclick="event.stopPropagation();enviarDocumentos('${cid}')">
+      ${(!semEmail && docs.some(d=>!d.arquivo_removido_em)) ? `<button class="docs-enviar" id="env_${cid}" onclick="event.stopPropagation();enviarDocumentos('${cid}')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
         ENVIAR ${docs.length>1?`OS ${docs.length} DOCUMENTOS`:'AO CLIENTE'}
       </button>` : ''}
