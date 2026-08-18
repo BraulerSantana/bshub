@@ -512,6 +512,37 @@ body.light .mes-label{background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit
   border-radius:var(--radius-xs);padding:8px 10px;}
 .docs-bloqueio svg{width:13px;height:13px;stroke:#f59e0b;flex:none;}
 
+
+/* ═══ IMPORTAÇÃO XLSX (Cirurgia 31) ═══ */
+.imp-drop{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:34px 20px;text-align:center;
+  cursor:pointer;transition:all .2s;}
+.imp-drop:hover,.imp-drop.hot{border-color:var(--accent);background:rgba(59,130,246,.07);}
+.imp-drop svg{width:34px;height:34px;stroke:var(--accent);margin-bottom:10px;}
+.imp-drop .t{font-size:14px;font-weight:700;color:var(--text);}
+.imp-drop .s{font-size:11.5px;color:var(--text3);margin-top:4px;}
+.imp-modelo{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;
+  color:var(--accent);cursor:pointer;margin-top:12px;background:none;border:0;font-family:inherit;}
+.imp-modelo:hover{text-decoration:underline;}
+.imp-modelo svg{width:13px;height:13px;}
+.imp-resumo{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.imp-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;
+  padding:6px 12px;border-radius:99px;}
+.chip-ok{color:#16a34a;background:rgba(22,163,74,.13);}
+.chip-dup{color:#f59e0b;background:rgba(245,158,11,.13);}
+.chip-err{color:#dc2626;background:rgba(220,38,38,.13);}
+.imp-tabela{max-height:330px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-xs);}
+.imp-linha{display:flex;align-items:center;gap:10px;padding:8px 11px;border-bottom:1px solid var(--border);
+  font-size:12px;}
+.imp-linha:last-child{border-bottom:0;}
+.imp-linha.dup{background:rgba(245,158,11,.07);}
+.imp-linha.err{background:rgba(220,38,38,.07);}
+.imp-n{font-family:var(--mono,monospace);font-size:10px;color:var(--text3);min-width:26px;}
+.imp-doc{font-family:var(--mono,monospace);font-size:11px;color:var(--text2);min-width:145px;}
+.imp-nome{flex:1;color:var(--text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.imp-tag{font-size:9px;font-weight:800;letter-spacing:.03em;padding:2px 7px;border-radius:99px;flex:none;}
+.imp-prog{height:6px;border-radius:99px;background:var(--bg3);overflow:hidden;margin:14px 0 8px;}
+.imp-prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#2563eb,#1e40af);transition:width .3s;}
+
 /* SUBTAREFAS */
 .subtarefas-wrap{padding:4px 10px 8px;}
 .subtarefas-header{display:flex;align-items:center;gap:6px;margin-bottom:5px;cursor:pointer;user-select:none;}
@@ -1943,6 +1974,7 @@ async function salvarNovaSenha(){
       <button class="hbtn" onclick="openRotinasModal();fecharMenuMobile()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> <span>Rotinas</span></button>
       <button class="hbtn" onclick="window.open('/ajuda.html','_blank');fecharMenuMobile()" title="Central de Ajuda do BSHub"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> <span>Ajuda</span></button>
     </div>
+    <button class="hbtn" id="btnImportar" onclick="abrirImportar()" title="Importar empresas de uma planilha"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span>Importar</span></button>
     <button class="hbtn primary" id="btnAddEmpresa" onclick="openAddEmpresa()">+ <span>Empresa</span></button>
   </div>
 </div>
@@ -2149,6 +2181,55 @@ async function salvarNovaSenha(){
     <button class="btn-cancel" onclick="closeOverlayEmpresa()">Cancelar</button>
     <button class="btn-save" onclick="saveEmpresa()">Salvar</button>
   </div>
+</div>
+</div>
+
+<!-- MODAL IMPORTAR EMPRESAS (Cirurgia 31) -->
+<div class="overlay" id="overlayImportar" onclick="closeOverlay('overlayImportar',event)">
+<div class="modal" onclick="event.stopPropagation()" style="max-width:640px">
+  <h3>📥 Importar empresas</h3>
+
+  <!-- etapa 1: escolher arquivo -->
+  <div id="impEtapa1">
+    <div class="imp-drop" id="impDrop"
+         onclick="document.getElementById('impFile').click()"
+         ondragover="event.preventDefault();this.classList.add('hot')"
+         ondragleave="this.classList.remove('hot')"
+         ondrop="impSoltar(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div class="t">Solte a planilha aqui</div>
+      <div class="s">Excel (.xlsx) ou CSV · colunas: CNPJ/CPF e Nome</div>
+    </div>
+    <input type="file" id="impFile" accept=".xlsx,.xls,.csv" style="display:none"
+           onchange="impLerArquivo(this.files[0]);this.value=''">
+    <div style="text-align:center">
+      <button class="imp-modelo" onclick="impBaixarModelo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Baixar planilha modelo
+      </button>
+    </div>
+    <div style="font-size:11.5px;color:var(--text3);margin-top:14px;line-height:1.6">
+      As empresas entram <strong>sem rotinas marcadas</strong> — configure cada uma depois.
+      CNPJ e CPF são aceitos com ou sem pontuação.
+    </div>
+  </div>
+
+  <!-- etapa 2: conferência -->
+  <div id="impEtapa2" style="display:none">
+    <div class="imp-resumo" id="impResumo"></div>
+    <div class="mf" style="margin-bottom:10px">
+      <label>Importar para o grupo</label>
+      <select id="impGrupo"></select>
+    </div>
+    <div class="imp-tabela" id="impTabela"></div>
+    <div class="imp-prog" id="impProgWrap" style="display:none"><i id="impProg"></i></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="impVoltar()" style="flex:1;padding:11px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-xs);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">Voltar</button>
+      <button id="impConfirmar" onclick="impConfirmar()" style="flex:2;padding:11px;background:linear-gradient(135deg,#2563eb,#1e40af);color:#fff;border:0;border-radius:var(--radius-xs);font-family:inherit;font-size:12.5px;font-weight:800;cursor:pointer">IMPORTAR</button>
+    </div>
+  </div>
+
+  <button onclick="closeOverlay('overlayImportar')" style="width:100%;margin-top:12px;padding:10px;background:var(--bg3);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-xs);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Fechar</button>
 </div>
 </div>
 
@@ -2630,6 +2711,207 @@ async function syncObrigacoesLoteSupabase(empresaId, rotinaIds, dataMarcacao){
 // -------------------------------------------------------------------
 // Sync empresa completa (create + update): grava empresa + vinculos + financeiro
 // -------------------------------------------------------------------
+
+// ═══════════════════════════════════════════════════════════════
+// CIRURGIA 31 — Importação de empresas via planilha
+// ═══════════════════════════════════════════════════════════════
+
+const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+let _xlsxPronto = null;
+let _impLinhas = [];
+
+function carregarXlsx(){
+  if(_xlsxPronto) return _xlsxPronto;
+  _xlsxPronto = new Promise((res,rej)=>{
+    if(window.XLSX){ res(window.XLSX); return; }
+    const s=document.createElement('script');
+    s.src=XLSX_CDN;
+    s.onload=()=> window.XLSX ? res(window.XLSX) : rej(new Error('xlsx indisponivel'));
+    s.onerror=()=>rej(new Error('cdn indisponivel'));
+    document.head.appendChild(s);
+  }).catch(e=>{ _xlsxPronto=null; throw e; });
+  return _xlsxPronto;
+}
+
+function abrirImportar(){
+  document.getElementById('impEtapa1').style.display='block';
+  document.getElementById('impEtapa2').style.display='none';
+  document.getElementById('impProgWrap').style.display='none';
+  _impLinhas=[];
+  const sel=document.getElementById('impGrupo');
+  sel.innerHTML=(state.grupos||[]).map(g=>`<option value="${g}"${g===currentGrupo?' selected':''}>${g}</option>`).join('');
+  document.getElementById('overlayImportar').classList.add('open');
+}
+
+function impVoltar(){
+  document.getElementById('impEtapa1').style.display='block';
+  document.getElementById('impEtapa2').style.display='none';
+}
+
+function impSoltar(ev){
+  ev.preventDefault();
+  const el=document.getElementById('impDrop');
+  if(el) el.classList.remove('hot');
+  const f=ev.dataTransfer.files && ev.dataTransfer.files[0];
+  if(f) impLerArquivo(f);
+}
+
+// Planilha modelo, gerada na hora (CSV abre no Excel sem problema)
+function impBaixarModelo(){
+  const csv='CNPJ/CPF;Nome\n'
+    +'11.222.333/0001-81;EMPRESA EXEMPLO LTDA\n'
+    +'52998224725;JOAO DA SILVA ME\n';
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='modelo-importacao-bshub.csv';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+
+// Descobre quais colunas são o documento e o nome, aceitando
+// variações de cabeçalho que aparecem na prática.
+function impDetectarColunas(cab){
+  const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  let iDoc=-1, iNome=-1;
+  cab.forEach((h,i)=>{
+    const n=norm(h);
+    if(iDoc<0  && /(cnpj|cpf|documento|inscricao|doc)/.test(n)) iDoc=i;
+    if(iNome<0 && /(nome|razao|empresa|cliente|fantasia)/.test(n)) iNome=i;
+  });
+  return {iDoc,iNome};
+}
+
+function impFormatarDoc(digitos){
+  if(digitos.length===14) return digitos.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,'$1.$2.$3/$4-$5');
+  if(digitos.length===11) return digitos.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/,'$1.$2.$3-$4');
+  return digitos;
+}
+
+async function impLerArquivo(file){
+  if(!file) return;
+  try{
+    const XLSXlib=await carregarXlsx();
+    const buf=await file.arrayBuffer();
+    const wb=XLSXlib.read(buf,{type:'array'});
+    const aba=wb.Sheets[wb.SheetNames[0]];
+    const linhas=XLSXlib.utils.sheet_to_json(aba,{header:1,blankrows:false,raw:false});
+    if(!linhas.length){ toast('Planilha vazia','error'); return; }
+
+    // primeira linha é cabeçalho se não tiver documento válido nela
+    let ini=0, {iDoc,iNome}=impDetectarColunas(linhas[0]);
+    if(iDoc>=0 || iNome>=0) ini=1;
+    if(iDoc<0)  iDoc=0;
+    if(iNome<0) iNome=1;
+
+    // documentos já cadastrados (inclusive inativos)
+    const existentes=new Set();
+    (state.grupos||[]).forEach(g=>(state.clientes[g]||[]).forEach(c=>{
+      const d=(c.doc||'').replace(/\D/g,'');
+      if(d) existentes.add(d);
+    }));
+
+    const vistos=new Set();
+    _impLinhas=[];
+
+    for(let i=ini;i<linhas.length;i++){
+      const L=linhas[i]||[];
+      const docBruto=String(L[iDoc]||'').trim();
+      const nome=String(L[iNome]||'').trim();
+      if(!docBruto && !nome) continue;
+
+      const dig=docBruto.replace(/\D/g,'');
+      let st='ok', obs='';
+
+      if(!nome){ st='err'; obs='sem nome'; }
+      else if(!dig){ st='err'; obs='sem CNPJ/CPF'; }
+      else if(dig.length!==14 && dig.length!==11){ st='err'; obs='documento com '+dig.length+' dígitos'; }
+      else if(dig.length===14 && !validaCNPJ(dig)){ st='err'; obs='CNPJ inválido'; }
+      else if(dig.length===11 && !validaCPF(dig)){ st='err'; obs='CPF inválido'; }
+      else if(existentes.has(dig)){ st='dup'; obs='já cadastrada'; }
+      else if(vistos.has(dig)){ st='dup'; obs='repetida na planilha'; }
+      else vistos.add(dig);
+
+      _impLinhas.push({ linha:i+1, doc:dig?impFormatarDoc(dig):docBruto, digitos:dig, nome, st, obs });
+    }
+
+    if(!_impLinhas.length){ toast('Nenhuma linha encontrada','error'); return; }
+    impMostrarConferencia();
+
+  }catch(e){
+    console.error(e);
+    toast(e.message==='cdn indisponivel' ? 'Não foi possível carregar o leitor de planilhas' : 'Não foi possível ler o arquivo','error');
+  }
+}
+
+function impMostrarConferencia(){
+  const ok=_impLinhas.filter(l=>l.st==='ok').length;
+  const dup=_impLinhas.filter(l=>l.st==='dup').length;
+  const err=_impLinhas.filter(l=>l.st==='err').length;
+
+  document.getElementById('impResumo').innerHTML=
+     `<span class="imp-chip chip-ok">${ok} para importar</span>`
+    +(dup?`<span class="imp-chip chip-dup">${dup} já existem</span>`:'')
+    +(err?`<span class="imp-chip chip-err">${err} com erro</span>`:'');
+
+  document.getElementById('impTabela').innerHTML=_impLinhas.map(l=>{
+    const cls=l.st==='ok'?'':(l.st==='dup'?'dup':'err');
+    const tag=l.st==='ok'?'':`<span class="imp-tag ${l.st==='dup'?'chip-dup':'chip-err'}">${l.obs}</span>`;
+    return `<div class="imp-linha ${cls}">
+      <span class="imp-n">${l.linha}</span>
+      <span class="imp-doc">${l.doc||'—'}</span>
+      <span class="imp-nome">${l.nome||'—'}</span>
+      ${tag}
+    </div>`;
+  }).join('');
+
+  const btn=document.getElementById('impConfirmar');
+  btn.disabled = ok===0;
+  btn.style.opacity = ok===0 ? '.5' : '1';
+  btn.textContent = ok ? `IMPORTAR ${ok} EMPRESA${ok>1?'S':''}` : 'NADA A IMPORTAR';
+
+  document.getElementById('impEtapa1').style.display='none';
+  document.getElementById('impEtapa2').style.display='block';
+}
+
+async function impConfirmar(){
+  const novas=_impLinhas.filter(l=>l.st==='ok');
+  if(!novas.length) return;
+  const grupo=document.getElementById('impGrupo').value;
+  if(!grupo){ toast('Escolha o grupo de destino','error'); return; }
+
+  const btn=document.getElementById('impConfirmar');
+  btn.disabled=true; btn.textContent='IMPORTANDO…';
+  const wrap=document.getElementById('impProgWrap'), barra=document.getElementById('impProg');
+  wrap.style.display='block';
+
+  let feitas=0, falhas=0;
+  for(const l of novas){
+    try{
+      const id='emp_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+      const novo={
+        id, cod:'', nome:l.nome, doc:l.doc, ie:'', enviaDocs:false,
+        cep:'', logradouro:'', numero:'', complemento:'', bairro:'', municipio:'', uf:'',
+        whats:'', email:'', grupo, grupos:[grupo],
+        folha:false, inss:false, fgts:false, consignado:false, horas:false,
+        rotinas:[], ativo:true, obs:'', login:'', senha:'', gov:'',
+        codAcesso:'', empWebLogin:'', empWebSenha:'',
+        compIni:'', compFim:'', mei:false, honorario:0, vencDia:''
+      };
+      state.clientes[grupo]=state.clientes[grupo]||[];
+      state.clientes[grupo].push(novo);
+      await syncEmpresaSupabase(novo,[grupo]);
+      feitas++;
+    }catch(e){ falhas++; console.error('[importar]',l.nome,e); }
+    barra.style.width=Math.round(((feitas+falhas)/novas.length)*100)+'%';
+  }
+
+  saveState();
+  renderAll();
+  closeOverlay('overlayImportar');
+  toast(feitas+' empresa(s) importada(s)'+(falhas?' · '+falhas+' falharam':''), falhas?'error':'success');
+}
+
 async function syncEmpresaSupabase(cliente, gruposNomes){
   try {
     // 1) UPSERT na tabela empresas (todos os campos exceto financeiro)
