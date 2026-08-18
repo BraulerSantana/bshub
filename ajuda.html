@@ -132,6 +132,62 @@
   #noresults b{color:var(--ink)}
   mark{background:#fef08a;color:inherit;border-radius:3px;padding:0 1px}
 
+/* botão flutuante de busca — no celular, com 15 seções, voltar ao
+   topo para pesquisar é o maior atrito */
+.fab-busca{display:none;position:fixed;right:16px;bottom:16px;z-index:50;
+  width:52px;height:52px;border-radius:50%;border:0;cursor:pointer;
+  background:linear-gradient(135deg,var(--brand-600),var(--brand-700));
+  box-shadow:0 8px 24px rgba(29,78,216,.42);place-items:center}
+.fab-busca svg{width:22px;height:22px;stroke:#fff}
+@media(max-width:660px){ .fab-busca{display:grid} }
+@media(prefers-reduced-motion:reduce){ .fab-busca{transition:none} }
+
+/* ═══════════ REFINAMENTO MOBILE ═══════════ */
+@media(max-width:660px){
+  /* A Central tem 15 seções: no celular isso vira 25 telas de rolagem.
+     O caminho é encolher o respiro e facilitar o acesso pela busca. */
+  .section{padding:22px 18px;margin-bottom:14px;border-radius:14px}
+  .section h2{font-size:20px}
+  .section-sub{font-size:13.5px;margin-bottom:16px}
+  .section h3{font-size:15px;margin:18px 0 8px}
+  .section p{font-size:14px;margin-bottom:10px}
+  .section p.lead{font-size:14.5px}
+  .section-icon{width:38px;height:38px}
+  .section-icon svg{width:19px;height:19px}
+  .section-head{gap:11px;margin-bottom:6px}
+
+  ol.steps>li{font-size:14px;padding-left:38px;padding-bottom:13px}
+  ol.steps>li::before{width:25px;height:25px;font-size:12px}
+  ol.steps>li:not(:last-child)::after{left:11.5px}
+  ul.bullets>li{font-size:14px;padding:4px 0 4px 21px}
+
+  .callout{padding:13px 14px;font-size:13.5px;margin:14px 0;gap:11px}
+  .callout .ct{font-size:13px}
+  .ui{font-size:12.5px;padding:2px 7px}
+  code{font-size:12px}
+
+  /* hero mais curto — a busca é o que importa no celular */
+  .hero{padding:78px 16px 92px}
+  .hero h1{font-size:26px;line-height:1.15}
+  .hero p{font-size:14.5px;margin-bottom:20px}
+  .hero-brand{margin-bottom:18px}
+  .hero-eyebrow{margin-bottom:12px}
+  #search{padding:15px 16px 15px 46px;font-size:16px}  /* 16px evita o zoom do iOS */
+  .search-wrap svg.ico{left:16px}
+  .search-hint{display:none}
+
+  .shell{margin-top:-72px;padding:0 12px 44px}
+
+  /* menu lateral: fecha ao tocar num item, então precisa ser confortável */
+  .sidebar{width:270px;padding:12px}
+  .nav-link{padding:11px 12px;font-size:14px}
+  .nav-group-label{padding:10px 12px 5px}
+
+  .foot{padding:26px 16px 40px}
+  .seals{gap:9px}
+  .seal{font-size:12px;padding:7px 12px}
+}
+
   /* Footer */
   .foot{max-width:1160px;margin:0 auto;padding:34px 24px 60px;text-align:center;color:var(--text-3);font-size:13px}
   .seals{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
@@ -146,7 +202,7 @@
   .topbar b span{color:var(--brand-600)}
   .menu-btn{margin-left:auto;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);display:grid;place-items:center;cursor:pointer}
   .menu-btn svg{width:20px;height:20px;stroke:var(--ink)}
-  .backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:44}
+  .backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:55}
 
   @media(max-width:940px){
     .hero{padding:36px 20px 108px}
@@ -154,8 +210,8 @@
     .hero-card{display:none}
     .hero-brand{margin-bottom:24px}
     .topbar{display:flex}
-    .shell{grid-template-columns:1fr;margin-top:-64px;padding:0 16px 60px}
-    .sidebar{position:fixed;top:0;left:0;bottom:0;width:280px;max-height:100vh;border-radius:0 18px 18px 0;transform:translateX(-105%);transition:transform .25s ease;z-index:45;box-shadow:0 20px 60px rgba(15,23,42,.3)}
+    .shell{grid-template-columns:1fr;margin-top:-64px;padding:0 16px 60px;z-index:auto}
+    .sidebar{position:fixed;top:0;left:0;bottom:0;width:280px;max-height:100vh;border-radius:0 18px 18px 0;transform:translateX(-105%);transition:transform .25s ease;z-index:60;box-shadow:0 20px 60px rgba(15,23,42,.3)}
     .sidebar.open{transform:translateX(0)}
     .backdrop.open{display:block}
     .section{padding:26px 22px}
@@ -188,7 +244,7 @@
         <p>Controle das obrigações e tarefas de <strong>todo o escritório de contabilidade</strong> — fiscal, contábil e departamento pessoal. Encontre em segundos como fazer cada rotina.</p>
         <div class="search-wrap">
           <i data-lucide="search" class="ico"></i>
-          <input id="search" type="text" placeholder="Buscar na ajuda (ex.: Simples Nacional, marcar entrega, convidar colaborador)" autocomplete="off">
+          <input id="search" type="text" placeholder="Buscar na ajuda (ex.: enviar documentos, importar empresas, marcar entrega)" autocomplete="off">
           <span class="search-hint"><kbd>/</kbd></span>
         </div>
       </div>
@@ -214,8 +270,10 @@
     <a class="nav-link" data-target="rotinas"><i data-lucide="repeat"></i> Rotinas mensais</a>
     <a class="nav-link" data-target="entregas"><i data-lucide="check-circle-2"></i> Entregas e obrigações</a>
     <a class="nav-link" data-target="subtarefas"><i data-lucide="list-checks"></i> Subtarefas</a>
+    <a class="nav-link" data-target="documentos"><i data-lucide="send"></i> Enviar documentos</a>
     <a class="nav-link" data-target="anual"><i data-lucide="calendar-days"></i> Painel anual</a>
     <div class="nav-group-label">Gestão do escritório</div>
+    <a class="nav-link" data-target="importar"><i data-lucide="upload"></i> Importar empresas</a>
     <a class="nav-link admin-only" data-target="financeiro"><i data-lucide="wallet"></i> Financeiro</a>
     <a class="nav-link admin-only" data-target="equipe"><i data-lucide="users"></i> Equipe</a>
     <a class="nav-link admin-only" data-target="escritorios"><i data-lucide="briefcase"></i> Escritórios</a>
@@ -375,6 +433,63 @@
       <p>Uma subtarefa <strong>fixada</strong> volta a aparecer a cada competência, já zerada — perfeita para conferências que fazem parte do fechamento de todo mês. As não fixadas valem só para o mês em que foram criadas.</p>
     </section>
 
+
+    <!-- ENVIAR DOCUMENTOS -->
+    <section class="section" id="documentos">
+      <div class="section-head"><div class="section-icon"><i data-lucide="send"></i></div><h2>Enviar documentos ao cliente <span class="admin-badge"><i data-lucide="lock"></i> Módulo opcional</span></h2></div>
+      <p class="section-sub">Entregue guias e relatórios sem sair do sistema — e saiba quando o cliente baixou.</p>
+
+      <div class="callout adm"><i data-lucide="info"></i><div><span class="ct">Módulo à parte</span>A aba Documentos só aparece se o módulo estiver ativo no seu escritório. Se não estiver e você tiver interesse, fale com o suporte.</div></div>
+
+      <h3>Antes de começar: marcar a empresa</h3>
+      <p>Cada empresa escolhe se recebe documentos pelo BSHub. Abra o cadastro e marque <span class="ui">Enviar documentos ao cliente pelo BSHub</span>. Empresas sem essa marcação seguem como sempre, sem a aba.</p>
+      <div class="callout tip"><i data-lucide="mail"></i><div><span class="ct">O e-mail é obrigatório</span>Sem e-mail cadastrado não há para onde enviar. A aba avisa e o envio fica bloqueado até você preencher.</div></div>
+
+      <h3>Subir os arquivos</h3>
+      <ol class="steps">
+        <li>No card da empresa, abra a seção <span class="ui">Documentos</span>.</li>
+        <li>Arraste os PDFs ou clique para escolher.</li>
+        <li>O sistema confere cada arquivo e mostra na lista.</li>
+      </ol>
+      <p>Só arquivos <strong>PDF</strong> são aceitos, com até 10 MB cada.</p>
+
+      <h3>A conferência automática</h3>
+      <p>Ao receber o arquivo, o BSHub <strong>lê o CNPJ dentro do documento</strong> e compara com o da empresa:</p>
+      <ul class="bullets">
+        <li><strong>CNPJ confere</strong> — segue normalmente, e o sistema ainda identifica a qual rotina o documento pertence.</li>
+        <li><strong>Documento de outra empresa</strong> — o arquivo é <strong>bloqueado e não sobe</strong>. É a proteção contra enviar a guia de um cliente para outro.</li>
+        <li><strong>CNPJ não conferido</strong> — quando o PDF não traz um documento legível. O arquivo sobe com aviso, e você confere na mão.</li>
+      </ul>
+
+      <h3>Enviar</h3>
+      <p>Clique em <span class="ui">Enviar ao cliente</span>. Vai <strong>um e-mail só</strong>, com todos os documentos da competência — cada um com seu link.</p>
+      <p>O cliente não recebe anexo: ele recebe um link seguro, que abre uma página do BSHub para baixar. O link vale <strong>30 dias</strong>.</p>
+
+      <h3>Acompanhar a entrega</h3>
+      <p>Cada documento mostra em que ponto está:</p>
+      <ul class="bullets">
+        <li><strong>PENDENTE</strong> — no sistema, ainda não enviado</li>
+        <li><strong>ENVIANDO</strong> — saiu, aguardando confirmação</li>
+        <li><strong>ENTREGUE</strong> — o servidor do destinatário aceitou</li>
+        <li><strong>BAIXADO</strong> — o cliente abriu, com data, hora e quantas vezes</li>
+        <li><strong>FALHOU</strong> — o e-mail voltou; o motivo aparece na tela</li>
+      </ul>
+      <div class="callout ok"><i data-lucide="shield-check"></i><div><span class="ct">A prova de que entregou</span>O registro do download é a resposta pronta para o "não recebi". Ele fica guardado mesmo depois que o arquivo é removido.</div></div>
+
+      <h3>Corrigir um documento enviado errado</h3>
+      <p>Clique no ícone de <span class="ui">substituir</span> na linha do documento e escolha o arquivo certo. O que acontece depois:</p>
+      <ul class="bullets">
+        <li>O <strong>link antigo é invalidado na hora</strong> — quem tentar abrir vê que houve uma versão nova</li>
+        <li>O novo entra como <strong>v2</strong>, e o anterior sai da lista</li>
+        <li>Se o cliente já tinha recebido, o sistema oferece enviar um <strong>e-mail de correção</strong>, pedindo para desconsiderar o arquivo anterior</li>
+      </ul>
+
+      <h3>Quanto tempo o arquivo fica guardado</h3>
+      <p>O BSHub é o <strong>canal de entrega</strong>, não o arquivo do escritório. Os documentos ficam disponíveis por <strong>60 dias</strong> e depois são removidos automaticamente.</p>
+      <p>O registro permanece: você continua vendo que enviou e que o cliente baixou, com data e hora. Só o arquivo deixa de estar disponível — se precisar de novo, é só subir outra vez.</p>
+      <div class="callout warn"><i data-lucide="alert-triangle"></i><div><span class="ct">O arquivamento é do escritório</span>Guarde os documentos no seu próprio sistema. O BSHub não substitui o arquivo permanente do escritório.</div></div>
+    </section>
+
     <!-- ANUAL -->
     <section class="section" id="anual">
       <div class="section-head"><div class="section-icon"><i data-lucide="calendar-days"></i></div><h2>Painel anual</h2></div>
@@ -387,6 +502,43 @@
         <li>Marque o status de cada etapa, do mesmo jeito das rotinas mensais.</li>
       </ul>
       <div class="callout tip"><i data-lucide="lightbulb"></i><div><span class="ct">Onde encontrar</span>Abra o painel anual pelo botão correspondente no cabeçalho para ver a visão do ano separada da rotina mensal.</div></div>
+    </section>
+
+
+    <!-- IMPORTAR EMPRESAS -->
+    <section class="section" id="importar">
+      <div class="section-head"><div class="section-icon"><i data-lucide="upload"></i></div><h2>Importar empresas</h2></div>
+      <p class="section-sub">Traga a carteira inteira de uma vez, por planilha.</p>
+
+      <p class="lead">Em vez de cadastrar empresa por empresa, monte uma planilha e importe tudo de uma vez — útil principalmente no primeiro dia de uso.</p>
+
+      <h3>Como é a planilha</h3>
+      <p>Duas colunas: <strong>CNPJ/CPF</strong> e <strong>Nome</strong>. Aceita Excel (<code>.xlsx</code>) ou CSV. Use o botão <span class="ui">Baixar planilha modelo</span> para partir de um arquivo pronto.</p>
+      <ul class="bullets">
+        <li>O documento pode vir <strong>com ou sem pontuação</strong> — <code>11.222.333/0001-81</code> ou <code>11222333000181</code></li>
+        <li><strong>CNPJ e CPF</strong> são aceitos, na mesma planilha</li>
+        <li>O sistema grava sempre no formato com pontuação</li>
+      </ul>
+
+      <h3>Importando</h3>
+      <ol class="steps">
+        <li>Clique em <span class="ui">Importar</span>, no topo da tela.</li>
+        <li>Arraste a planilha ou clique para escolher.</li>
+        <li>Confira a lista que aparece e escolha o grupo de destino.</li>
+        <li>Confirme.</li>
+      </ol>
+
+      <h3>A tela de conferência</h3>
+      <p>Antes de importar, o BSHub mostra linha por linha o que encontrou:</p>
+      <ul class="bullets">
+        <li><strong>Para importar</strong> — documento válido e ainda não cadastrado</li>
+        <li><strong>Já existe</strong> — a empresa já está no sistema, ou o documento se repete na própria planilha. Ela é pulada.</li>
+        <li><strong>Com erro</strong> — CNPJ ou CPF inválido, sem nome, sem documento. O motivo aparece ao lado.</li>
+      </ul>
+      <p>O número da linha da planilha aparece em cada registro, para você corrigir direto no arquivo original.</p>
+
+      <div class="callout tip"><i data-lucide="lightbulb"></i><div><span class="ct">As empresas entram sem rotinas</span>Nenhuma rotina vem marcada — cada empresa tem uma combinação diferente, e marcar o que falta dá menos trabalho do que desmarcar o que veio errado. Configure depois, empresa por empresa.</div></div>
+      <div class="callout ok"><i data-lucide="shield-check"></i><div><span class="ct">Nada entra errado</span>O sistema confere o dígito verificador de cada CNPJ e CPF. Documento inválido não vira empresa.</div></div>
     </section>
 
     <!-- FINANCEIRO -->
@@ -483,6 +635,18 @@
       <h3>Um colaborador não vê nenhuma empresa</h3>
       <p>O acesso é por grupo. Confira em <span class="ui">👥 Equipe</span> se ele está vinculado a pelo menos um grupo com empresas. Sem grupo atribuído, a tela dele fica vazia por segurança.</p>
 
+      <h3>O cliente diz que não recebeu o documento</h3>
+      <p>Abra a seção <span class="ui">Documentos</span> no card da empresa e veja o status. Se estiver <strong>BAIXADO</strong>, aparece a data e a hora em que ele abriu — é a comprovação. Se estiver <strong>FALHOU</strong>, o e-mail voltou: confira o endereço cadastrado, corrija e envie de novo.</p>
+
+      <h3>Enviei o documento errado. E agora?</h3>
+      <p>Use o ícone de <span class="ui">substituir</span> na linha do documento. O link antigo é invalidado imediatamente, e o sistema oferece enviar um aviso de correção ao cliente pedindo para desconsiderar o anterior.</p>
+
+      <h3>Um documento sumiu da lista</h3>
+      <p>Duas possibilidades. Se ele foi substituído, saiu da lista de propósito — a versão nova aparece marcada como <strong>v2</strong>. Se passaram mais de 60 dias, o arquivo foi removido automaticamente: o registro continua visível como <strong>ARQUIVO EXPIRADO</strong>, e basta subir de novo se precisar reenviar.</p>
+
+      <h3>O sistema bloqueou meu documento</h3>
+      <p>Significa que o CNPJ dentro do PDF é de outra empresa. Confira se soltou o arquivo no card certo. Essa trava existe justamente para impedir que a guia de um cliente vá para outro.</p>
+
       <h3>O convite não chegou</h3>
       <p>Olhe as pastas de spam e promoções. O convite vem do domínio <code>bshub.com.br</code>. Se não aparecer, o administrador pode reenviar pelo painel de equipe.</p>
 
@@ -492,12 +656,16 @@
   </main>
 </div>
 
+<button class="fab-busca" id="fabBusca" aria-label="Buscar na ajuda" onclick="irParaBusca()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+</button>
+
 <footer class="foot">
   <div class="seals">
     <span class="seal"><i data-lucide="shield-check"></i> 100% conforme a LGPD</span>
     <span class="seal"><i data-lucide="check-circle-2"></i> 100% controle das rotinas</span>
   </div>
-  <div>BSHub · Central de Ajuda — versão 1.0 · Julho de 2026</div>
+  <div>BSHub · Central de Ajuda — versão 2.0 · Agosto de 2026</div>
 </footer>
 
 <script>
@@ -589,6 +757,13 @@
       if(empty) noresults.querySelector('.q').textContent = raw;
     }, 120);
   });
+
+  // Volta ao topo e foca a busca (usado pelo botão flutuante no celular)
+  function irParaBusca(){
+    window.scrollTo({top:0, behavior:'smooth'});
+    setTimeout(()=>search.focus(), 400);
+  }
+  window.irParaBusca = irParaBusca;
 
   // Atalho "/" foca a busca
   document.addEventListener('keydown', e => {
