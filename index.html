@@ -3108,9 +3108,11 @@ async function syncEmpresaSupabase(cliente, gruposNomes){
     }
     
     console.log('[Sync] OK Empresa ' + cliente.id + ' salva (' + vinculos.length + ' vinculo(s) de grupo)');
+    return true;
   } catch(e){
     console.error('[Sync] Falha ao salvar empresa ' + cliente.id + ':', e);
     syncErro(e);
+    return false;
   }
 }
 
@@ -5421,6 +5423,11 @@ async function saveEmpresa(){
   // COLABORADOR: NÃO altera o cadastro da empresa - só grava seus vínculos pessoais
   // ═══════════════════════════════════════════════════════════════════
   const admin=isAdmin();
+  // Cirurgia 33: colaborador_rotinas tem FK para empresas. Numa empresa nova a
+  // linha em `empresas` precisa estar gravada ANTES dos vinculos de rotina,
+  // senao o banco recusa com "violates foreign key constraint".
+  // Colaborador nao grava cadastro, entao para ele a flag ja nasce verdadeira.
+  let empresaGravada = true;
 
   if(admin){
     // Se está na aba de um colaborador, NÃO altera o cadastro da empresa —
@@ -5472,13 +5479,13 @@ async function saveEmpresa(){
     if(_idParaSync){
       const _clienteSalvo = findCliente(_idParaSync);
       if(_clienteSalvo){
-        syncEmpresaSupabase(_clienteSalvo, grupos);
+        empresaGravada = await syncEmpresaSupabase(_clienteSalvo, grupos);
       }
     }
   }
   // Sincroniza VÍNCULOS PESSOAIS de rotinas do usuário atual (admin e colaborador)
   const idParaVinculos = editingEmpresaId || _ultimoIdCriado;
-  if(idParaVinculos){
+  if(idParaVinculos && empresaGravada){
     await sincronizarVinculosRotinasUsuario(idParaVinculos, rotinaIdsMarcadas);
   }
   if(!admin){toast('Suas rotinas foram atualizadas ✅','success');}
