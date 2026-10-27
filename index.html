@@ -3123,48 +3123,79 @@ let mapaGruposIds = {};
 // Busca todos os dados do escritório logado e monta um objeto no MESMO formato
 // que loadState() do localStorage retorna — assim o resto do sistema não sabe
 // que a fonte mudou.
+// ═══ CIRURGIA 32 — LEITURA PAGINADA ═══
+// A API do Supabase devolve no máximo 1000 linhas por requisição e NÃO avisa
+// quando corta: `error` vem null e o resto simplesmente não chega.
+// Com a base crescendo mês a mês, obrigacao_status passou de 1000 linhas e as
+// marcações mais novas ficavam de fora da releitura — gravavam certo no banco
+// e sumiam no login seguinte.
+// Esta função busca de 1000 em 1000 até a tabela acabar.
+// A ordenação é obrigatória: sem ordem fixa o banco pode repetir ou pular
+// linha entre uma página e outra.
+const PAGINA_SUPABASE = 1000;
+
+async function lerTudo(tabela, colunas, ordem, filtroEq){
+  const todas = [];
+  let de = 0;
+  for(;;){
+    let q = sb.from(tabela).select(colunas);
+    if(filtroEq) for(const col in filtroEq) q = q.eq(col, filtroEq[col]);
+    ordem.forEach(col => { q = q.order(col); });
+    const { data, error } = await q.range(de, de + PAGINA_SUPABASE - 1);
+    if(error){ console.error(`[Supabase] Falha ao ler ${tabela}:`, error); throw error; }
+    const lote = data || [];
+    todas.push(...lote);
+    if(lote.length < PAGINA_SUPABASE) break;
+    de += PAGINA_SUPABASE;
+  }
+  if(todas.length > PAGINA_SUPABASE){
+    console.log(`[Supabase] ${tabela}: ${todas.length} linhas em ${Math.ceil(todas.length/PAGINA_SUPABASE)} páginas`);
+  }
+  return todas;
+}
+
 async function loadStateFromSupabase(){
   console.log('[Supabase] Carregando state do banco...');
   const t0 = performance.now();
   
   try {
-    // 14 SELECTs em paralelo (muito mais rápido que sequencial)
+    // 17 SELECTs em paralelo, cada um paginado (Cirurgia 32)
     const [
-      { data: grupos },
-      { data: empresas },
-      { data: empresaGrupos },
-      { data: rotinas },
-      { data: entregas },
-      { data: subtarefas },
-      { data: subStatus },
-      { data: finBaixas },
-      { data: obrigacoesStatus },
-      { data: financeirosEmpresas },
-      { data: observacoesData },
-      { data: obAnualStatusData },
-      { data: obAnualSubsData },
-      { data: obAnualSubStatusData },
-      { data: perfisTodos },
-      { data: colabRotinasData },
-      { data: documentosData }
+      grupos,
+      empresas,
+      empresaGrupos,
+      rotinas,
+      entregas,
+      subtarefas,
+      subStatus,
+      finBaixas,
+      obrigacoesStatus,
+      financeirosEmpresas,
+      observacoesData,
+      obAnualStatusData,
+      obAnualSubsData,
+      obAnualSubStatusData,
+      perfisTodos,
+      colabRotinasData,
+      documentosData
     ] = await Promise.all([
-      sb.from('grupos').select('id, nome, cor, ordem, ativo, inativado_em, inativado_por, dono_id').order('ordem'),
-      sb.from('empresas').select('*'),
-      sb.from('empresa_grupos').select('empresa_id, grupo_id'),
-      sb.from('rotinas').select('id, nome, cor, builtin, ordem, ativo, inativado_em, inativado_por').order('ordem'),
-      sb.from('entregas').select('empresa_id, mes_ref, entregue_em'),
-      sb.from('subtarefas').select('id, empresa_id, texto, mes_ref, fixada, criada_por'),
-      sb.from('subtarefa_status').select('subtarefa_id, mes_ref, concluida'),
-      sb.from('fin_baixas').select('empresa_id, mes_ref, data_baixa'),
-      sb.from('obrigacao_status').select('empresa_id, rotina_id, mes_ref, concluida, data_marcacao, concluida_por'),
-      sb.from('financeiro_empresas').select('empresa_id, honorario, venc_dia'),
-      sb.from('observacoes').select('empresa_id, mes_ref, texto'),
-      sb.from('ob_anual_status').select('empresa_id, ob_id, ano, concluida, data_marcacao'),
-      sb.from('ob_anual_subs').select('id, empresa_id, ob_id, ano, texto'),
-      sb.from('ob_anual_sub_status').select('sub_id, concluida'),
-      sb.from('profiles').select('id, role, nome'),
-      sb.from('colaborador_rotinas').select('user_id, empresa_id, rotina_id'),
-      sb.from('documentos').select('id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, validacao_json, versao, substitui_id, revogado_em, substituido_em, arquivo_removido_em, token, expira_em, status_envio, enviado_em, entregue_em, falha_motivo, destinatario, baixado_em, baixado_count, ativo').eq('ativo', true)
+      lerTudo('grupos', 'id, nome, cor, ordem, ativo, inativado_em, inativado_por, dono_id', ['ordem','id']),
+      lerTudo('empresas', '*', ['id']),
+      lerTudo('empresa_grupos', 'empresa_id, grupo_id', ['empresa_id','grupo_id']),
+      lerTudo('rotinas', 'id, nome, cor, builtin, ordem, ativo, inativado_em, inativado_por', ['ordem','id']),
+      lerTudo('entregas', 'empresa_id, mes_ref, entregue_em', ['empresa_id','mes_ref']),
+      lerTudo('subtarefas', 'id, empresa_id, texto, mes_ref, fixada, criada_por', ['id']),
+      lerTudo('subtarefa_status', 'subtarefa_id, mes_ref, concluida', ['subtarefa_id','mes_ref']),
+      lerTudo('fin_baixas', 'empresa_id, mes_ref, data_baixa', ['empresa_id','mes_ref']),
+      lerTudo('obrigacao_status', 'empresa_id, rotina_id, mes_ref, concluida, data_marcacao, concluida_por', ['empresa_id','rotina_id','mes_ref']),
+      lerTudo('financeiro_empresas', 'empresa_id, honorario, venc_dia', ['empresa_id']),
+      lerTudo('observacoes', 'empresa_id, mes_ref, texto', ['empresa_id','mes_ref']),
+      lerTudo('ob_anual_status', 'empresa_id, ob_id, ano, concluida, data_marcacao', ['empresa_id','ob_id','ano']),
+      lerTudo('ob_anual_subs', 'id, empresa_id, ob_id, ano, texto', ['id']),
+      lerTudo('ob_anual_sub_status', 'sub_id, concluida', ['sub_id']),
+      lerTudo('profiles', 'id, role, nome', ['id']),
+      lerTudo('colaborador_rotinas', 'user_id, empresa_id, rotina_id', ['user_id','empresa_id','rotina_id']),
+      lerTudo('documentos', 'id, empresa_id, competencia, nome_arquivo, storage_path, tamanho_bytes, tipo, rotina_id, descricao, validacao_json, versao, substitui_id, revogado_em, substituido_em, arquivo_removido_em, token, expira_em, status_envio, enviado_em, entregue_em, falha_motivo, destinatario, baixado_em, baixado_count, ativo', ['id'], { ativo: true })
     ]);
     
     // Montar novo state no formato compatível com localStorage antigo
@@ -4023,12 +4054,16 @@ function isSuperAdmin(){return !!usuarioAtual.super_admin;}
 // -------------------------------------------------------------------
 async function abrirPainelEscritorios(){
   if(!isSuperAdmin()){toast('Acesso restrito','error');return;}
-  const [{data:escritorios,error:e1},{data:perfisAdmin,error:e2},{data:empresasCount,error:e3}]=await Promise.all([
-    sb.from('escritorios').select('id, nome, status, plano_vence_em, observacoes, suspenso_em, suspenso_motivo, criado_em').order('nome'),
-    sb.from('profiles').select('id, nome, email, escritorio_id').eq('role','admin'),
-    sb.from('empresas').select('escritorio_id, ativo')
-  ]);
-  if(e1||e2||e3){toast('Erro ao carregar: '+(e1?.message||e2?.message||e3?.message),'error');return;}
+  // Cirurgia 32: esta contagem soma empresas de TODOS os escritórios e estoura
+  // o teto de 1000 linhas da API conforme a base cresce — por isso vai paginada.
+  let escritorios, perfisAdmin, empresasCount;
+  try{
+    [escritorios, perfisAdmin, empresasCount] = await Promise.all([
+      lerTudo('escritorios','id, nome, status, plano_vence_em, observacoes, suspenso_em, suspenso_motivo, criado_em',['nome','id']),
+      lerTudo('profiles','id, nome, email, escritorio_id',['id'],{ role:'admin' }),
+      lerTudo('empresas','escritorio_id, ativo',['id'])
+    ]);
+  }catch(err){ toast('Erro ao carregar: '+(err?.message||err),'error'); return; }
   const hoje=new Date().toISOString().slice(0,10);
   // Conta empresas por escritório
   const contEmp={};
