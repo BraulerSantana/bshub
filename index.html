@@ -2713,7 +2713,29 @@ document.getElementById('logoImg').src='data:image/jpeg;base64,iVBORw0KGgoAAAANS
 // ===== BASE DATA =====
 const BASE_CLIENTES = {};
 
-const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro','13º Salário'];
+// ═══ CIRURGIA 34 — Competência 13º ═══
+// currentMes===12 representa a competência 13º (mes_ref "AAAA-13"), navegada depois de Dezembro.
+// No 13º, TODAS as empresas recebem as 3 tarefas fixas abaixo (e só elas).
+// Elas existem na tabela rotinas (id d13_*) para manter integridade em obrigacao_status,
+// mas ficam fora de state.rotinas — não aparecem no cadastro, filtros nem nos meses comuns.
+// venc: {mes (0-11), dia} usado nos alertas do calendário.
+const MES_13=12;
+const ROTINAS_13=[
+  {id:'d13_parc1', name:'13º 1ª Parcela', color:'#16a34a', builtin:true, venc:{mes:10, dia:30}},
+  {id:'d13_parc2', name:'13º 2ª Parcela', color:'#0ea5e9', builtin:true, venc:{mes:11, dia:20}},
+  {id:'d13_dctf',  name:'DCTF',           color:'#8b5cf6', builtin:true, venc:{mes:11, dia:20}}
+];
+const ROTINAS_13_IDS=ROTINAS_13.map(r=>r.id);
+function is13(){return currentMes===MES_13;}
+function mesDataRef(m){return m===MES_13?11:m;}
+// Rotinas que valem na competência atual (13º → as 3 fixas; demais meses → rotinas do escritório)
+function rotinasDoMes(){return is13()?ROTINAS_13:state.rotinas;}
+// Data de vencimento de uma rotina na competência atual
+function dataVencRotina(r,venc){
+  if(is13()&&r.venc) return new Date(currentAno,r.venc.mes,r.venc.dia);
+  return new Date(currentAno,currentMes,(venc&&venc[r.id])||10);
+}
 
 const PALETTE=['#3b82f6','#8b5cf6','#f59e0b','#ec4899','#06b6d4','#22c55e','#ef4444','#f97316','#84cc16','#14b8a6','#e879f9','#fb923c'];
 
@@ -3337,6 +3359,8 @@ async function loadStateFromSupabase(){
     novoState.rotinas = [];
     novoState.rotinasInativas = [];
     (rotinas || []).forEach(r => {
+      // Cirurgia 34: rotinas do 13º (d13_*) são fixas no código — não entram nas listas comuns
+      if(ROTINAS_13_IDS.includes(r.id)) return;
       const rObj = { id: r.id, name: r.nome, color: r.cor, builtin: !!r.builtin };
       if(r.ativo === false){
         novoState.rotinasInativas.push({ ...rObj, inativado_em: r.inativado_em, inativado_por: r.inativado_por });
@@ -3345,6 +3369,9 @@ async function loadStateFromSupabase(){
       }
     });
     
+    // Cirurgia 34: cria (em background) as rotinas do 13º que ainda não existirem no banco
+    garantirRotinas13Supabase(rotinas);
+
     // 4) ENTREGAS: chave "mes|empresaId" → timestamp
     (entregas || []).forEach(e => {
       const chave = e.mes_ref + '|' + e.empresa_id;
@@ -3610,9 +3637,10 @@ function isEntregue(cid){return !!state.entregues[entKey(cid)];}
 
 function changeMes(d){
   currentMes+=d;
-  if(currentMes>11){currentMes=0;currentAno++;}
-  if(currentMes<0){currentMes=11;currentAno--;}
+  if(currentMes>MES_13){currentMes=0;currentAno++;}
+  if(currentMes<0){currentMes=MES_13;currentAno--;}
   document.getElementById('mesLabel').textContent=MESES[currentMes].slice(0,3)+' '+currentAno;
+  popularFiltroRotina();
   renderAll();
   aplicarRecorrenciaAuto();
 }
@@ -3807,6 +3835,11 @@ function getClienteGruposLabel(c){
   return gs.join(' · ');
 }
 function getRotinasByCliente(c){
+  // Cirurgia 34: na competência 13º todas as empresas recebem as 3 tarefas fixas do 13º
+  if(is13()) return ROTINAS_13;
+  return _getRotinasByClienteBase(c);
+}
+function _getRotinasByClienteBase(c){
   const donoDaAba = state.grupoDono?.[currentGrupo] || usuarioAtual?.id;
   const vinculos = state.colabRotinasVinculos || new Set();
   // Rotinas cadastradas na empresa (comportamento antigo — quando NÃO há vínculos pessoais)
@@ -4391,6 +4424,34 @@ function setFilter(f){
 // -------------------------------------------------------------------
 // Sync rotina customizada - CRIAR
 // -------------------------------------------------------------------
+// Cirurgia 34: garante que as 3 rotinas do 13º existam na tabela rotinas do escritório
+// (para obrigacao_status poder referenciá-las). Só insere as que faltam; falha é silenciosa
+// (ex.: colaborador sem permissão de INSERT em rotinas — o admin cria no próximo login).
+async function garantirRotinas13Supabase(rotinasDb){
+  try{
+    if(!usuarioAtual?.escritorio_id) return;
+    // Consulta só o próprio escritório (super-admin enxerga rotinas de outros escritórios)
+    const { data: jaTem, error: eSel } = await sb.from('rotinas').select('id')
+      .eq('escritorio_id', usuarioAtual.escritorio_id).in('id', ROTINAS_13_IDS);
+    if(eSel) throw eSel;
+    const existentes=new Set((jaTem||[]).map(r=>r.id));
+    const faltam=ROTINAS_13.filter(r=>!existentes.has(r.id));
+    if(!faltam.length) return;
+    const { error } = await sb.from('rotinas').insert(faltam.map((r,i)=>({
+      id: r.id,
+      escritorio_id: usuarioAtual.escritorio_id,
+      nome: r.name,
+      cor: r.color,
+      builtin: true,
+      ordem: 900+i
+    })));
+    if(error) throw error;
+    console.log('[Sync] OK Rotinas do 13º criadas:', faltam.map(r=>r.id).join(', '));
+  }catch(e){
+    console.warn('[Sync] Rotinas do 13º não criadas (verificar permissão/estrutura):', e);
+  }
+}
+
 async function syncRotinaCriarSupabase(rotina){
   try {
     const { error } = await sb.from('rotinas').insert({
@@ -6237,6 +6298,7 @@ function dashGoMes(mes,ano){
   closeOverlay('overlayDash');
   currentMes=mes; currentAno=ano;
   document.getElementById('mesLabel').textContent=MESES[currentMes].slice(0,3)+' '+currentAno;
+  popularFiltroRotina();
   aplicarRecorrenciaAuto();
   renderAll();
 }
@@ -6650,8 +6712,9 @@ function popularFiltroRotina(){
   if(!sel)return;
   const val=sel.value;
   sel.innerHTML='<option value="">Todas as rotinas</option>'+
-    state.rotinas.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
+    rotinasDoMes().map(r=>`<option value="${r.id}">${r.name}</option>`).join('');
   sel.value=val;
+  if(sel.value!==val)sel.value='';
 }
 
 // ===== UNSAVED CHANGES GUARD =====
@@ -6835,6 +6898,8 @@ function aplicarRecorrenciaAuto(){
   // mas obs POR MÊS (obsmes) começa sempre vazia)
   // Apaga obs temporárias do mês anterior se existirem
   const mkPrev=mesPrevKey();
+  // Cirurgia 34: entrar no 13º não limpa as obs de Dezembro (as duas competências correm juntas)
+  if(is13()){saveState();return;}
   // Remove obs mensais do mês anterior
   Object.keys(state.obsMes||{}).forEach(k=>{
     if(k.startsWith(mkPrev+'|'))delete state.obsMes[k];
@@ -7184,12 +7249,12 @@ function getVencimentos(){
   return state.vencimentos;
 }
 
-let calMes=currentMes;
+let calMes=mesDataRef(currentMes);
 let calAno=currentAno;
 let calTab='cal';
 
 function openCalendario(){
-  calMes=currentMes; calAno=currentAno;
+  calMes=mesDataRef(currentMes); calAno=currentAno;
   calSetTab('alertas'); // Abre direto nos alertas que é mais útil
   atualizarBadgeCalendario();
   document.getElementById('overlayCalendario').classList.add('open');
@@ -7323,9 +7388,9 @@ function renderCalAlertas(){
   const mkAtual=mesKey();
   const alertas=[];
 
-  state.rotinas.forEach(r=>{
-    const diaVenc=venc[r.id]||10;
-    const dataVenc=new Date(currentAno,currentMes,diaVenc);
+  rotinasDoMes().forEach(r=>{
+    const dataVenc=dataVencRotina(r,venc);
+    const diaVenc=dataVenc.getDate();
     const diffMs=dataVenc-hoje;
     const diffDias=Math.ceil(diffMs/(1000*60*60*24));
 
@@ -7425,9 +7490,9 @@ function atualizarBadgeCalendario(){
   const venc=getVencimentos();
   const hoje=new Date();
   let urgentes=0;
-  state.rotinas.forEach(r=>{
-    const diaVenc=venc[r.id]||10;
-    const dataVenc=new Date(currentAno,currentMes,diaVenc);
+  rotinasDoMes().forEach(r=>{
+    const dataVenc=dataVencRotina(r,venc);
+    const diaVenc=dataVenc.getDate();
     const diffDias=Math.ceil((dataVenc-hoje)/(1000*60*60*24));
     if(diffDias>7)return;
     state.grupos.forEach(g=>{
