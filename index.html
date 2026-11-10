@@ -2445,11 +2445,12 @@ async function salvarNovaSenha(){
     </div>
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px;">
       <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;">⬆ Restaurar backup</div>
-      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Carrega um arquivo <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">.json</code> gerado por este sistema.</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">Adiciona ao seu escritório, na nuvem, as empresas de um arquivo <code style="background:var(--bg);padding:1px 4px;border-radius:3px;">.json</code> gerado por este sistema.</div>
       <label style="display:block;width:100%;padding:9px;background:rgba(239,68,68,.06);border:1px dashed rgba(239,68,68,.3);border-radius:6px;color:#f87171;font-size:11px;font-weight:700;text-align:center;cursor:pointer;">
         ⬆ Selecionar Arquivo
         <input type="file" accept=".json" onchange="restaurarBackup(event)" style="display:none">
       </label>
+      <div id="restProg" style="display:none;margin-top:8px;font-size:11px;font-weight:700;color:var(--text2);text-align:center"></div>
     </div>
   </div>
   <div class="modal-btns">
@@ -5962,7 +5963,10 @@ const ICON_TEMA_SOL='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
 
 // ===== BACKUP LOCAL =====
 function exportarBackup(){
-  const data = JSON.stringify(state, null, 2);
+  // Cirurgia 35: só exporta empresas dos grupos do escritório (sem restos de outros logins)
+  const copia = { ...state, clientes: {} };
+  (state.grupos || []).forEach(g => { copia.clientes[g] = state.clientes[g] || []; });
+  const data = JSON.stringify(copia, null, 2);
   const blob = new Blob([data], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -5975,26 +5979,272 @@ function exportarBackup(){
   toast('✓ Backup baixado!','success');
 }
 
+// ═══════════════════════════════════════════════════════════════
+// CIRURGIA 35 — Restaurar backup gravando na nuvem
+// ═══════════════════════════════════════════════════════════════
+// Antes: restaurarBackup() só fazia Object.assign(state)+saveState() →
+// os dados ficavam no localStorage e sumiam no próximo login, porque
+// loadStateFromSupabase() substitui o state pelo que está no banco.
+//
+// Agora o backup é ADICIONADO ao escritório logado, no Supabase:
+//  • só os grupos listados em dados.grupos (chaves órfãs de clientes
+//    — restos de outros escritórios — são ignoradas);
+//  • empresas ganham ID NOVO (empresas.id é único no banco inteiro;
+//    reaproveitar o ID do backup colidiria com o escritório de origem);
+//  • empresa com CNPJ/CPF já cadastrado no escritório é pulada;
+//  • rotinas são casadas pelo NOME com as do escritório; as que faltarem
+//    são criadas; vínculos e marcações são remapeados para os IDs novos;
+//  • leva também: marcações de obrigações, entregas, subtarefas (+status),
+//    observações do mês e status das obrigações anuais;
+//  • nada que já existe na nuvem é apagado ou sobrescrito.
+// Ao final, o state é recarregado do Supabase (fonte única da verdade).
+
+const _restNorm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+const _restDig  = s => String(s||'').replace(/\D/g,'');
+let _restSeq = 0;
+const _restId = prefixo => prefixo + Date.now() + '_' + (++_restSeq) + Math.random().toString(36).slice(2,6);
+
+function _restProgresso(txt){
+  const el = document.getElementById('restProg');
+  if(!el) return;
+  el.style.display = txt ? 'block' : 'none';
+  el.textContent = txt || '';
+}
+
+async function _restUpsertLotes(tabela, linhas, onConflict){
+  for(let i = 0; i < linhas.length; i += 500){
+    const lote = linhas.slice(i, i + 500);
+    const q = onConflict
+      ? sb.from(tabela).upsert(lote, { onConflict, ignoreDuplicates: true })
+      : sb.from(tabela).insert(lote);
+    const { error } = await q;
+    if(error) throw new Error(tabela + ': ' + error.message);
+  }
+}
+
+// Lê o arquivo e monta o plano (sem gravar nada) — usado na confirmação
+function _restPlanejar(dados){
+  const gruposBkp = (dados.grupos || []).filter(g => Array.isArray(dados.clientes[g]));
+  const orfaos = Object.keys(dados.clientes || {}).filter(g => !gruposBkp.includes(g));
+
+  // documentos já cadastrados no escritório (todos os grupos, ativos e inativos)
+  const docsExistentes = new Set();
+  Object.values(state.clientes || {}).forEach(arr => (arr || []).forEach(c => {
+    const d = _restDig(c.doc); if(d) docsExistentes.add(d);
+  }));
+
+  // empresas únicas (uma empresa pode estar em mais de um grupo)
+  const empresas = new Map(); // idAntigo → {c, grupos:Set}
+  gruposBkp.forEach(g => (dados.clientes[g] || []).forEach(c => {
+    if(!c || !c.id) return;
+    if(!empresas.has(c.id)) empresas.set(c.id, { c, grupos: new Set() });
+    empresas.get(c.id).grupos.add(g);
+  }));
+
+  const novas = [], puladas = [];
+  const docsVistos = new Set();
+  empresas.forEach(item => {
+    const d = _restDig(item.c.doc);
+    if(d && (docsExistentes.has(d) || docsVistos.has(d))){ puladas.push(item.c.nome); return; }
+    if(d) docsVistos.add(d);
+    novas.push(item);
+  });
+  return { gruposBkp, orfaos, novas, puladas };
+}
+
 function restaurarBackup(event){
   const file = event.target.files[0];
   if(!file) return;
   const reader = new FileReader();
   reader.onload = function(e){
-    try{
-      const dados = JSON.parse(e.target.result);
-      if(!dados.grupos||!dados.clientes){ toast('Arquivo inválido','error'); return; }
-      confirm2('Restaurar backup?',`Arquivo: ${file.name}. Os dados atuais serão substituídos.`,()=>{
-        Object.assign(state, dados);
-        saveState();
-        currentGrupo = state.grupos[0]||'';
-        closeOverlay('overlayBackup');
-        renderAll();
-        toast('✓ Backup restaurado!','success');
-      });
-    }catch(err){ toast('Erro ao ler arquivo','error'); }
-    event.target.value='';
+    event.target.value = '';
+    let dados;
+    try{ dados = JSON.parse(e.target.result); }
+    catch(err){ toast('Erro ao ler arquivo','error'); return; }
+    if(!dados || !Array.isArray(dados.grupos) || !dados.clientes){ toast('Arquivo inválido','error'); return; }
+    if(!isAdmin()){ toast('Só o administrador do escritório pode restaurar backup','error'); return; }
+
+    const plano = _restPlanejar(dados);
+    if(!plano.novas.length){
+      toast(plano.puladas.length ? 'Todas as empresas do backup já estão cadastradas' : 'Nenhuma empresa no backup','error');
+      return;
+    }
+    const msg = `Arquivo: ${file.name}. `
+      + `Serão ADICIONADOS ao seu escritório ${plano.gruposBkp.length} grupo(s) e ${plano.novas.length} empresa(s), com rotinas, marcações e entregas. `
+      + (plano.puladas.length ? `${plano.puladas.length} empresa(s) com CNPJ/CPF já cadastrado serão puladas. ` : '')
+      + (plano.orfaos.length ? `Dados fora da lista de grupos do arquivo (${plano.orfaos.join(', ')}) serão ignorados. ` : '')
+      + 'Nada do que já existe será apagado.';
+    confirm2('Restaurar backup na nuvem?', msg, () => executarRestauracao(dados, plano));
   };
   reader.readAsText(file);
+}
+
+async function executarRestauracao(dados, plano){
+  const esc = usuarioAtual.escritorio_id;
+  const uid = usuarioAtual.id;
+  const res = { grupos:0, rotinas:0, empresas:0, falhas:0, marcacoes:0, entregas:0, subtarefas:0, obs:0, anuais:0 };
+  try{
+    // ── 1) GRUPOS ─────────────────────────────────────────────
+    _restProgresso('Criando grupos…');
+    const inativosGrupo = (state.gruposInativos || []).map(g => g.nome);
+    for(const g of plano.gruposBkp){
+      if(state.grupos.includes(g)) continue;
+      if(inativosGrupo.includes(g) && mapaGruposIds[g]){
+        const { error } = await sb.from('grupos').update({ ativo:true, inativado_em:null, inativado_por:null }).eq('id', mapaGruposIds[g]);
+        if(error) throw new Error('Grupo "'+g+'": '+error.message);
+      } else {
+        const { data, error } = await sb.from('grupos').insert({
+          escritorio_id: esc, nome: g,
+          cor: (dados.grupoColors && dados.grupoColors[g]) || PALETTE[state.grupos.length % PALETTE.length],
+          ordem: state.grupos.length
+        }).select('id').single();
+        if(error) throw new Error('Grupo "'+g+'": '+error.message);
+        mapaGruposIds[g] = data.id;
+      }
+      state.grupos.push(g);
+      res.grupos++;
+    }
+
+    // ── 2) ROTINAS (casadas pelo nome) ────────────────────────
+    _restProgresso('Conferindo rotinas…');
+    const rotMap = {};                           // idBackup → idEscritório
+    ROTINAS_13_IDS.forEach(id => rotMap[id] = id);
+    const rotEsc = [...(state.rotinas || []), ...(state.rotinasInativas || [])];
+    const porId = {}, porNome = {};
+    rotEsc.forEach(r => { porId[r.id] = r; porNome[_restNorm(r.name)] = r; });
+
+    // só interessam as rotinas usadas pelas empresas importadas ou pelas marcações delas
+    const idsAntigos = new Set(plano.novas.map(i => i.c.id));
+    const rotUsadas = new Set();
+    plano.novas.forEach(i => (i.c.rotinas || []).forEach(r => rotUsadas.add(r)));
+    Object.keys(dados.obrigacoes || {}).forEach(k => {
+      const [, emp, rot] = k.split('|');
+      if(idsAntigos.has(emp) && rot && !/_(d|a)$/.test(rot)) rotUsadas.add(rot);
+    });
+
+    for(const r of (dados.rotinas || [])){
+      if(!rotUsadas.has(r.id) || rotMap[r.id]) continue;
+      const mesmoNome = porNome[_restNorm(r.name)];
+      if(mesmoNome){ rotMap[r.id] = mesmoNome.id; continue; }
+      if(porId[r.id]){ rotMap[r.id] = r.id; continue; }  // mesmo id já existe neste escritório
+      const novoId = _restId('rot_');
+      const { error } = await sb.from('rotinas').insert({
+        id: novoId, escritorio_id: esc, nome: r.name,
+        cor: r.color || '#3b82f6', builtin: false,
+        ordem: 100 + rotEsc.length + res.rotinas
+      });
+      if(error) throw new Error('Rotina "'+r.name+'": '+error.message);
+      rotMap[r.id] = novoId;
+      porNome[_restNorm(r.name)] = { id: novoId, name: r.name };
+      res.rotinas++;
+    }
+    // rotinas embutidas que não estão na lista do backup mas existem no escritório com o mesmo id
+    rotUsadas.forEach(id => { if(!rotMap[id] && porId[id]) rotMap[id] = id; });
+
+    // ── 3) EMPRESAS ───────────────────────────────────────────
+    const empMap = {};                           // idBackup → idNovo
+    let n = 0;
+    for(const item of plano.novas){
+      n++;
+      _restProgresso(`Gravando empresas… ${n}/${plano.novas.length}`);
+      const c = item.c;
+      const grupos = [...item.grupos];
+      const novo = {
+        ...c,
+        id: _restId('emp_'),
+        grupo: grupos[0], grupos,
+        rotinas: (c.rotinas || []).map(r => rotMap[r]).filter(Boolean),
+        anuais: Array.isArray(dados.obrigacoesAnuais?.[c.id]) ? dados.obrigacoesAnuais[c.id] : (c.anuais || [])
+      };
+      const ok = await syncEmpresaSupabase(novo, grupos);
+      if(ok){ empMap[c.id] = novo.id; res.empresas++; }
+      else res.falhas++;
+    }
+
+    // ── 4) HISTÓRICO (só das empresas gravadas com sucesso) ───
+    _restProgresso('Gravando marcações e entregas…');
+    const obrig = dados.obrigacoes || {};
+    const linhasOb = [];
+    Object.keys(obrig).forEach(k => {
+      if(!obrig[k] || /_(d|a)$/.test(k)) return;
+      const [mes, emp, rot] = k.split('|');
+      if(!empMap[emp] || !rotMap[rot]) return;
+      linhasOb.push({ escritorio_id: esc, empresa_id: empMap[emp], rotina_id: rotMap[rot], mes_ref: mes,
+        concluida: true, data_marcacao: obrig[k + '_d'] || null, concluida_por: uid });
+    });
+    await _restUpsertLotes('obrigacao_status', linhasOb, 'empresa_id,rotina_id,mes_ref');
+    res.marcacoes = linhasOb.length;
+
+    const linhasEnt = [];
+    Object.entries(dados.entregues || {}).forEach(([k, ts]) => {
+      const [mes, emp] = k.split('|');
+      if(empMap[emp] && ts) linhasEnt.push({ escritorio_id: esc, empresa_id: empMap[emp], mes_ref: mes, entregue_em: ts, entregue_por: uid });
+    });
+    await _restUpsertLotes('entregas', linhasEnt, 'empresa_id,mes_ref');
+    res.entregas = linhasEnt.length;
+
+    const linhasObs = [];
+    Object.entries(dados.obsMes || {}).forEach(([k, txt]) => {
+      const [mes, emp] = k.split('|');
+      if(empMap[emp] && String(txt||'').trim()) linhasObs.push({ escritorio_id: esc, empresa_id: empMap[emp], mes_ref: mes, texto: String(txt).trim(), atualizado_por: uid });
+    });
+    await _restUpsertLotes('observacoes', linhasObs, 'empresa_id,mes_ref');
+    res.obs = linhasObs.length;
+
+    _restProgresso('Gravando subtarefas…');
+    const subMap = {}, linhasSub = [];
+    Object.entries(dados.subtarefas || {}).forEach(([emp, subs]) => {
+      if(!empMap[emp] || !Array.isArray(subs)) return;
+      subs.forEach(s => {
+        if(!s || !s.texto) return;
+        const nid = _restId('s');
+        subMap[s.id] = nid;
+        linhasSub.push({ id: nid, escritorio_id: esc, empresa_id: empMap[emp], texto: s.texto,
+          mes_ref: s.mesRef || null, fixada: !!s.pinned, criada_por: uid });
+      });
+    });
+    await _restUpsertLotes('subtarefas', linhasSub);
+    res.subtarefas = linhasSub.length;
+
+    const linhasSubSt = [];
+    Object.entries(dados.subStatus || {}).forEach(([k, v]) => {
+      const [mes, emp, sid] = k.split('|');
+      if(v && empMap[emp] && subMap[sid]) linhasSubSt.push({ escritorio_id: esc, subtarefa_id: subMap[sid], mes_ref: mes, concluida: true, concluida_por: uid });
+    });
+    await _restUpsertLotes('subtarefa_status', linhasSubSt, 'subtarefa_id,mes_ref');
+
+    const anSt = dados.obAnualStatus || {};
+    const linhasAn = [];
+    Object.keys(anSt).forEach(k => {
+      if(!anSt[k] || /_d$/.test(k)) return;
+      const [ano, emp, obId] = k.split('|');
+      if(!empMap[emp] || !obId) return;
+      let dataIso = null;
+      const dBr = anSt[k + '_d'];
+      if(dBr){ const [d, m, y] = String(dBr).split('/'); if(d && m && y) dataIso = y + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0'); }
+      linhasAn.push({ escritorio_id: esc, empresa_id: empMap[emp], ob_id: obId, ano: Number(ano) || ano,
+        concluida: true, data_marcacao: dataIso, marcado_por: uid, marcado_em: new Date().toISOString() });
+    });
+    await _restUpsertLotes('ob_anual_status', linhasAn, 'empresa_id,ob_id,ano');
+    res.anuais = linhasAn.length;
+
+  } catch(e){
+    console.error('[Restaurar] Falha:', e);
+    syncErro(e, 'Restaurar backup');
+    toast('Restauração interrompida: ' + (e.message || 'erro') + '. O que já foi gravado foi mantido.', 'error');
+  }
+
+  // ── 5) RECARREGA DA NUVEM ───────────────────────────────────
+  _restProgresso('Recarregando dados…');
+  await substituirStatePorSupabase();
+  saveState();
+  if(!state.grupos.includes(currentGrupo)) currentGrupo = plano.gruposBkp.find(g => state.grupos.includes(g)) || state.grupos[0] || '';
+  renderAll();
+  _restProgresso('');
+  closeOverlay('overlayBackup');
+  console.log('[Restaurar] Resultado:', res);
+  toast(`✓ Backup restaurado: ${res.empresas} empresa(s), ${res.marcacoes} marcação(ões), ${res.entregas} entrega(s)`
+    + (res.falhas ? ` · ${res.falhas} empresa(s) falharam` : ''), res.falhas ? 'error' : 'success');
 }
 
 
